@@ -11,7 +11,7 @@ The data folder will remain empty on GitHub since much of the files necessary to
 ### Metadata regarding all 90 RNAseq runs produced in [Kowarsky et al., 2021](https://doi.org/10.1016/j.celrep.2020.108681) project
 
 | Run         | assay_type | Bases       | BioProject  | Bytes       | datastore_filetype | dev_stage   | Instrument  | LibraryLayout | LibrarySource  | Organism             | Platform | tissue       | replicate               |
-|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+|-------------|------------|-------------|-------------|-------------|--------------------|-------------|-------------|---------------|----------------|----------------------|----------|--------------|-------------------------|
 | SRR10352197 | RNA-Seq    | 3968168400  | PRJNA579844 | 1835765969  | fastq,run.zq,sra   | B3-B3/b3-b4 | NextSeq 500 | PAIRED        | TRANSCRIPTOMIC | Botryllus schlosseri | ILLUMINA | whole system |                         |
 | SRR10352198 | RNA-Seq    | 15242160271 | PRJNA579844 | 10731112341 | fastq,run.zq,sra   | B1-B2/b1-b2 | NextSeq 500 | PAIRED        | TRANSCRIPTOMIC | Botryllus schlosseri | ILLUMINA | whole system | biological replicate 3  |
 | SRR10352199 | RNA-Seq    | 270825748   | PRJNA579844 | 166356468   | fastq,run.zq,sra   | B1-B2/b1-b2 | NextSeq 500 | PAIRED        | TRANSCRIPTOMIC | Botryllus schlosseri | ILLUMINA | whole system | biological replicate 1  |
@@ -106,7 +106,7 @@ The data folder will remain empty on GitHub since much of the files necessary to
 ### Meta-metadata to describe column names metadata
 
 | Column Name        | Description                                                                                                                                                                                                 |
-|-------------|-----------------------------------------------------------|
+|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | Run                | NCBI accession number for SRA run.                                                                                                                                                                          |
 | assay_type         | Method used for assay.                                                                                                                                                                                      |
 | Bases              | Number of nucleic acid bases sequenced for each run.                                                                                                                                                        |
