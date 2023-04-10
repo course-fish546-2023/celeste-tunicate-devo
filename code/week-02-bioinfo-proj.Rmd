@@ -1,9 +1,31 @@
 ---
 title: "Week 02: Accessing Data"
-output: html_document
 date: "2023-04-06"
 ---
+
+Accessing reference genome
 ```{bash accessing the reference genome}
 cd data
 curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
 ```
+
+Playing around with quickly accessing data from SRA. Note that the original project used 90 RNA-seq runs to do their analysis regarding changes from embryogenesis to blastogenesis in several tissue types. I only want to evaluate transcriptomic changes across blastogenic stages in the whole organism.
+
+I want a way to grab all the SRA files within using the BioProject accession number: PRJNA579844. From there I will manage the files I need and delete the ones I don't.
+
+
+prompt I wrote: write me bash code that loads all RNAseq files from the NCBI BioProject PRJNA579844
+
+```{bash}
+# Create a new directory for the files
+mkdir PRJNA579844
+cd PRJNA579844
+
+# Download all RNAseq files
+wget -r -nH -nd -np -A "SRR*.fastq.gz" ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR315/ERR3159124/
+
+# Unzip the files
+gzip -d SRR*.fastq.gz
+```
+
+assistant: Note that the specific URL for the files will depend on which files you want to download. You can find this URL on the NCBI BioProject website for PRJNA579844 under the "Data access" section.
