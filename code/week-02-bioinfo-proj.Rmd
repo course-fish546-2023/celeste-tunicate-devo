@@ -1,9 +1,0 @@
----
-title: "Week 02: Accessing Data"
-output: html_document
-date: "2023-04-06"
----
-```{bash accessing the reference genome}
-cd data
-curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
-```
