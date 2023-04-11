@@ -9,26 +9,44 @@ cd data
 curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
 ```
 
-Playing around with quickly accessing data from SRA. Note that the original project used 90 RNA-seq runs to do their analysis regarding changes from embryogenesis to blastogenesis in several tissue types. I only want to evaluate transcriptomic changes across blastogenic stages in the whole organism.
+Playing around with quickly accessing data from SRA with the accession number: PRJNA579844. Note that the original project used 90 RNA-seq runs to do their analysis regarding changes from embryogenesis to blastogenesis in several tissue types. I only want to evaluate transcriptomic changes across blastogenic stages in the whole organism.
 
-I want a way to grab all the SRA files within using the BioProject accession number: PRJNA579844. From there I will manage the files I need and delete the ones I don't.
+I downloaded a SRRAccList.txt file from [SRARunSelector](https://www.ncbi.nlm.nih.gov/Traces/study/?query_key=2&WebEnv=MCID_64344bc30d67b35d7809c5e6&f=tissue_sam_ss%3An%3Awhole%2520system%3Ac&o=acc_s%3Aa&s=SRR10352197,SRR10352198,SRR10352199,SRR10352200,SRR10352201,SRR10352203,SRR10352204,SRR10352205,SRR10352206,SRR10352224,SRR10352225,SRR10352234,SRR10352235,SRR10352236,SRR10352237,SRR10352238,SRR10352239,SRR10352240,SRR10352244,SRR10352245,SRR10352246,SRR10352247,SRR10352251,SRR10352252,SRR10352254,SRR10352257,SRR10352258,SRR10352273,SRR10352277) containing the accession numbers of runs fulfilling the following parameters: blastogenic cycle and whole tissue.
 
 
-prompt I wrote: write me bash code that loads all RNAseq files from the NCBI BioProject PRJNA579844
+
 
 ```{bash}
 # Create a new directory for the files
-mkdir PRJNA579844
-cd PRJNA579844
+#cd data
+#mkdir BioProj-PRJNA579844
+#cd BioProj-PRJNA579844
 
 # Download all RNAseq files
-wget -r -nH -nd -np -A "SRR*.fastq.gz" ftp://ftp.sra.ebi.ac.uk/vol1/run/ERR315/ERR3159124/
+#wget -r -nH -nd -np -A "SRR*.fastq.gz" https://www.ncbi.nlm.nih.gov/bioproject/?term=PRJNA579844#
 
 # Unzip the files
-gzip -d SRR*.fastq.gz
+#gzip -d SRR*.fastq.gz
 ```
 
 assistant: Note that the specific URL for the files will depend on which files you want to download. You can find this URL on the NCBI BioProject website for PRJNA579844 under the "Data access" section.
 
+Installing sratoolkit on mac os
+```{bash}
 
-hello world
+curl --output sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-mac64.tar.gz
+```
+
+Extract the contents of the tar folder
+```{bash}
+tar -vxzf sratoolkit.tar.gz
+```
+
+```{bash}
+export PATH =$PATH:/Users/celestevaldivia/sratoolkit.3.0.0-mac64/bin
+```
+
+```{bash}
+which fastq-dump
+```
+
