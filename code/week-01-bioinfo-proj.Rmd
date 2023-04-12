@@ -10,14 +10,14 @@ curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_
 ```
 
 ```{bash}
-/home/shared/sratoolkit.2.11.2-ubuntu64/bin/fasterq-dump.2.11.2 \
---outdir /home/cvaldi/ncbi  \
+/home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
+--outdir /home/shared/8TB_HDD_01/tunicate  \
 --split-files \
---threads 27 \
+--threads 5 \
 --mem 100GB \
 --progress \
-SRR2656922 \
-SRR2657206 \
-SRR2657210 \
-
+SRR10352205 \
+SRR10352206 \
+SRR10352224 \
+SRR10352254
 ```
