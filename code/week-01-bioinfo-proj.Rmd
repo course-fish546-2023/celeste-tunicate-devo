@@ -1,23 +1,69 @@
 ---
-title: "Week 02: Accessing Data"
+title: "Week 02: Accessing SRA Data from NCBI"
+author: "Celeste Valdivia"
 date: "2023-04-06"
+output: md_document
 ---
 
-Accessing reference genome
-```{bash accessing the reference genome}
-cd data
-curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Evaluate code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
 ```
 
-```{bash}
+## 1. Identify the RNAseq data files (accession numbers) intend to use
+
+I will be using transcriptome data from the BioProject [PRJNA579844](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA579844).
+
+-   On this page, select the numeric value next to "SRA Experiments" which indicates the number of runs in this project. PRJNA579844 has 90 sequence reads available. We will focus on four reads for the sake of simplicity.
+
+-   On the top corner select the drop down menu "send to" and select "Run Selector"
+
+-   Run selector will show you all the runs available for the BioProject of interest with all the metadata. You can download metadata or accession list to keep track of your runs of interest. I downloaded the metadata and added it to this project repo's ReadMe. Below is a simplified list of the sequences of interest.
+
+We will be evaluating two replicates of early and late blastogenic stages in the marine model tunicate *Botryllus schlosseri*.
+
+| Run         | BioSample    | dev_stage | Experiment | Sample Name                            |
+|------|------|------|------|------|
+| SRR10352205 | SAMN13134439 | b5-b6     | SRX7061986 | HISeq-Sample_3411_IL2574-4             |
+| SRR10352206 | SAMN13134437 | b5-b6     | SRX7061984 | 4017_944axbyd196_stageC1to2_SecBud     |
+| SRR10352224 | SAMN13134463 | TO        | SRX7061961 | 3902_Sc109e_olds_zooid_D\_early_mid_kp |
+| SRR10352254 | SAMN13134462 | TO        | SRX7061960 | 3890_Sc109e_old_zooid_D\_mid_Late_kp   |
+
+
+## Identify where you want to store your data
+```{r, engine='bash'}
+# move to large data hardrive in Raven
+cd /home/shared/8TB_HDD_01
+
+# if you don't already have a folder in this harddrive run the code below to make a new directory with a unique name
+
+#mkdir tunicate
+```
+
+## 2. Accessing data
+
+```{r, engine = 'bash'}
+# here we can bypass prefetch by using fasterq-dump directly, I believe bypassing this will just make the download time longer
 /home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
---outdir /home/shared/8TB_HDD_01/tunicate  \
---split-files \
---threads 5 \
---mem 100GB \
+--outdir /home/shared/8TB_HDD_01/tunicate \
 --progress \
 SRR10352205 \
 SRR10352206 \
 SRR10352224 \
 SRR10352254
+```
+
+## 3. Checking what's in your directory
+
+```{r, engine ='bash}
+#if you want to check how much space files in your directory are taking up:
+cd ../<YOURPATH>
+du -h --max-depth=1
 ```
