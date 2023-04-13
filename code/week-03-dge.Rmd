@@ -1,0 +1,54 @@
+---
+title: "dge-tunicate"
+author: "Celeste Valdivia"
+output: md_document
+date: "2023-04-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Evaluate code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
+```
+
+
+## 1. Accessing reference genome
+```{r, engine= 'bash'}
+cd data
+curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
+```
+
+## 2. Locate Sequence reads
+You should have used file 1 of n to download the sequence reads in a large harddrive. Below is the path that my current projects four sequence reads are in.
+
+```{r, engine= 'bash'}
+cd /home/shared/8TB_HDD_01/tunicate
+```
+
+## 3. Build an index file
+```{r, engine= 'bash'}
+/home/shared/kallisto/kallisto \
+index -i \
+../data/cgigas_roslin_rna.index \
+../data/rna.fna
+```
+
+
+## 3.
+```{r, engine= 'bash'}
+mkdir ../output/kallisto_01
+
+find /home/shared/8TB_HDD_01/tunicate*fastq.gz \
+| xargs basename -s _001.fastq.gz | xargs -I{} \ /home/shared/kallisto/kallisto \
+quant -i ../data/<YOURINDEX> \
+-o ../output/kallisto_01/{} \
+-t 4 \
+--single -l 100 -s 10 \
+home/shared/8TB_HDD_01/tunicate/{}_L001_R1_001.fastq.gz
+```
