@@ -1,5 +1,5 @@
 ---
-title: "dge-tunicate"
+title: "Differential Gene Expression of Developmental stages in *Botrylus schlosseri*"
 author: "Celeste Valdivia"
 output: md_document
 date: "2023-04-13"
@@ -16,27 +16,46 @@ knitr::opts_chunk$set(
   fig.align = "center" # Align plots to the center
 )
 ```
-
+This is file 2 of 2.
 
 ## 1. Accessing reference genome
+For this workflow, we will utilize the assembled genome of [*Botryllus schlosseri*](https://elifesciences.org/articles/00569) as a reference when quantifying the transcripts of our transcriptome samples.
+
+
 ```{r, engine= 'bash'}
-cd data
+cd /home/shared/8TB_HDD_01/cvaldi/celeste-tunicate-devo/data
 curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
 ```
 
-## 2. Locate Sequence reads
-You should have used file 1 of n to download the sequence reads in a large harddrive. Below is the path that my current projects four sequence reads are in.
+## 2. Locate sequence reads
+You should have used file 1 of 2 to download the sequence reads in a large harddrive. For this project the path for our sequence read fastq files are in:
 
 ```{r, engine= 'bash'}
-cd /home/shared/8TB_HDD_01/tunicate
+cd /home/shared/8TB_HDD_01/tunicate2
 ```
 
 ## 3. Build an index file
-```{r, engine= 'bash'}
-/home/shared/kallisto/kallisto \
-index -i \
-../data/cgigas_roslin_rna.index \
-../data/rna.fna
+We will be aligning our sequence reads to the reference genome
+
+```{r Build a reference sequence index, engine=}
+# Create Hisat2 exons tab file
+"${programs_array[hisat2_exons]}" \
+"${transcripts_gtf}" \
+> "${exons}"
+
+# Create Hisat2 splice sites tab file
+"${programs_array[hisat2_splice_sites]}" \
+"${transcripts_gtf}" \
+> "${splice_sites}"
+
+# Build Hisat2 reference index using splice sites and exons
+"${programs_array[hisat2_build]}" \
+"${genome_fasta}" \
+"${genome_index_name}" \
+--exon "${exons}" \
+--ss "${splice_sites}" \
+-p "${threads}" \
+2> hisat2-build_stats.txt
 ```
 
 
