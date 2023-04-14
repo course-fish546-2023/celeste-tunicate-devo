@@ -11,9 +11,6 @@ knitr::opts_chunk$set(
   eval = FALSE,         # Evaluate code chunks
   warning = FALSE,     # Hide warnings
   message = FALSE,     # Hide messages
-  fig.width = 6,       # Set plot width in inches
-  fig.height = 4,      # Set plot height in inches
-  fig.align = "center" # Align plots to the center
 )
 ```
 This is file 2 of 2.
