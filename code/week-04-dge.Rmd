@@ -6,14 +6,9 @@ date: "2023-04-13"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  echo = TRUE,         # Display code chunks
-  eval = FALSE,         # Evaluate code chunks
-  warning = FALSE,     # Hide warnings
-  message = FALSE,     # Hide messages
-)
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE)
 ```
-This is file 2 of 2.
+This is file 3 of 3.
 
 ## 1. Accessing reference genome
 For this workflow, we will utilize the assembled genome of [*Botryllus schlosseri*](https://elifesciences.org/articles/00569) as a reference when quantifying the transcripts of our transcriptome samples.
