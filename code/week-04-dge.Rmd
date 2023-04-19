@@ -13,53 +13,40 @@ This is file 3 of 3.
 ## 1. Accessing reference genome
 For this workflow, we will utilize the assembled genome of [*Botryllus schlosseri*](https://elifesciences.org/articles/00569) as a reference when quantifying the transcripts of our transcriptome samples.
 
-
+This code chunk is 'curling' the zip of the *Botryllus schlosseri* genome assembly. 
 ```{r, engine= 'bash'}
 cd /home/shared/8TB_HDD_01/cvaldi/celeste-tunicate-devo/data
 curl --insecure -O https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/444/245/GCA_000444245.1_356a-chromosome-assembly/GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
 ```
 
-## 2. Locate sequence reads
-You should have used file 1 of 2 to download the sequence reads in a large harddrive. For this project the path for our sequence read fastq files are in:
+To unzip assembly and make sure you are in the data directory. Copy and paste the following into your terminal.
 
 ```{r, engine= 'bash'}
-cd /home/shared/8TB_HDD_01/tunicate2
+gzip -d GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
+```
+
+
+## 2. Locate sequence reads
+You should have used file 1 to download the sequence reads in a large harddrive. For this project the path for our sequence read fastq files are in:
+
+```{r, engine= 'bash'}
+# /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw
 ```
 
 ## 3. Build an index file
 We will be aligning our sequence reads to the reference genome
 
-```{r Build a reference sequence index, engine=}
-# Create Hisat2 exons tab file
-"${programs_array[hisat2_exons]}" \
-"${transcripts_gtf}" \
-> "${exons}"
+The below command takes the path to the HISAT2 executable.
+Then with -f option we specify that the input is a fasta file (which can come in the fasta, fna, or fa file extension format).
 
-# Create Hisat2 splice sites tab file
-"${programs_array[hisat2_splice_sites]}" \
-"${transcripts_gtf}" \
-> "${splice_sites}"
+We then title and create an index which is stored into the output folder. If you don't have an output folder in your working directory already, add one before running the below code.
 
-# Build Hisat2 reference index using splice sites and exons
-"${programs_array[hisat2_build]}" \
-"${genome_fasta}" \
-"${genome_index_name}" \
---exon "${exons}" \
---ss "${splice_sites}" \
--p "${threads}" \
-2> hisat2-build_stats.txt
-```
-
-
-## 3.
 ```{r, engine= 'bash'}
-mkdir ../output/kallisto_01
-
-find /home/shared/8TB_HDD_01/tunicate*fastq.gz \
-| xargs basename -s _001.fastq.gz | xargs -I{} \ /home/shared/kallisto/kallisto \
-quant -i ../data/<YOURINDEX> \
--o ../output/kallisto_01/{} \
--t 4 \
---single -l 100 -s 10 \
-home/shared/8TB_HDD_01/tunicate/{}_L001_R1_001.fastq.gz
+/home/shared/hisat2-2.2.1/hisat2-build \
+-f ../data/GCA_000444245.1_356a-chromosome-assembly_genomic.fna \
+../output/GCA_000444245.1_356a-valid.index
 ```
+
+## 3. Perform alignment
+Here we will align paired-end RNAseq files against the index we created using the HISAT2 software.
+
