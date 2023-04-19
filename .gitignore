@@ -28,4 +28,5 @@ vignettes/*.pdf
 .Renviron
 #larger files
 *.fna.gz
-md5.original.download.20230413
+*.fna
+*.ht2
