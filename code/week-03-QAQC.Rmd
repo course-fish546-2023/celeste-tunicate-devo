@@ -1,6 +1,6 @@
 ---
 title: "QA/QC"
-output: html_document
+output: md_document
 date: "2023-04-14"
 ---
 File 2 of 3.
@@ -9,30 +9,18 @@ File 2 of 3.
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE)
 ```
 
+Below I specify where the FastQC software is at and then run the command fastqc on all RNAseq files in the folder called raw with the extension .fastq using the wildcard '*'. The output will be an html report that can be viewed in a web browser.
 
-
-You may need to install fastp. Not sure if this is the right way to do so so don't run for now
 ```{r, engine='bash'}
-# download the latest build
-wget http://opengene.org/fastp/fastp
-chmod a+x ./fastp
+cd ../raw
+/home/shared/FastQC/fastqc *.fastq
 
-# or download specified version, i.e. fastp v0.23.1
-wget http://opengene.org/fastp/fastp.0.23.1
-mv fastp.0.23.1 fastp
-chmod a+x ./fastp
 ```
 
-What my QAQC query might look like using fastp.
+To open the html files run. Currently, this does not work so ask someone or troubleshoot later.
+
 ```{r, engine='bash'}
-fastp \
-   --in1 ./SRR10352205_1.fastq \
-   --in1 ./SRR10352224_1.fastq \
-   --in1 ./SRR10352206_1.fastq \
-   --in1 ./SRR10352254_1.fastq \
-   --in2 ./SRR10352205_2.fastq \
-   --in2 ./SRR10352206_2.fastq \
-   --in2 ./SRR10352224_2.fastq \
-   --in2 ./SRR10352254_2.fastq
+cd raw
+open *.html
 ```
 
