@@ -30,3 +30,4 @@ vignettes/*.pdf
 *.fna.gz
 *.fna
 *.ht2
+*.sam
