@@ -56,9 +56,11 @@ We can proceed with making an index using HISAT2 without information regarding e
 ## 3. Perform alignment
 Here we will align paired-end RNAseq files against the index we created using the HISAT2 software.
 
-Below is currently an example of only aligning one of my RNAseq files query: **SRR10352205*.*
-
 It seems like at least in the code chunk I need to specify the absolute path in order for hisat2 to find my input files. 
+
+We will align each RNAseq file one at a time just replacing the input fastq file and output name.
+
+### Query SRR10352205
 ```{r, engine= 'bash'}
 /home/shared/hisat2-2.2.1/hisat2 \
 -x /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/GCA_000444245.1_356a-valid.index \
@@ -75,7 +77,81 @@ It seems like at least in the code chunk I need to specify the absolute path in 
 -Su ../output/SRR10352205.sam \
 | /home/shared/samtools-1.12/samtools sort - \
 -@ 7 \
--0 SRR10352205.sorted.bam 
-/home/shared/samtools-1.12/samtool index SRR10352205.sorted.bam
+-o ../output/SRR10352205.sorted.bam 
+/home/shared/samtools-1.12/samtools index ../output/SRR10352205.sorted.bam
+```
+### Query SRR10352206
+```{r, engine= 'bash'}
+/home/shared/hisat2-2.2.1/hisat2 \
+-x /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/GCA_000444245.1_356a-valid.index \
+-1 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352206_1.fastq   \
+-2 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352206_2.fastq \
+-S ../output/SRR10352206.sam \
+--threads 7 
+
 ```
 
+```{r, engine = 'bash'}
+/home/shared/samtools-1.12/samtools view \
+-@ 7 \
+-Su ../output/SRR10352206.sam \
+| /home/shared/samtools-1.12/samtools sort - \
+-@ 7 \
+-o ../output/SRR10352206.sorted.bam 
+/home/shared/samtools-1.12/samtools index ../output/SRR10352206.sorted.bam
+```
+
+
+### Query SRR10352224
+```{r, engine= 'bash'}
+/home/shared/hisat2-2.2.1/hisat2 \
+-x /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/GCA_000444245.1_356a-valid.index \
+-1 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352224_1.fastq   \
+-2 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352224_2.fastq \
+-S ../output/SRR10352224.sam \
+--threads 7 
+
+```
+
+```{r, engine = 'bash'}
+/home/shared/samtools-1.12/samtools view \
+-@ 7 \
+-Su ../output/SRR10352224.sam \
+| /home/shared/samtools-1.12/samtools sort - \
+-@ 7 \
+-o ../output/SRR10352224.sorted.bam 
+/home/shared/samtools-1.12/samtools index ../output/SRR10352224.sorted.bam
+```
+
+
+### Query SRR10352254
+```{r, engine= 'bash'}
+/home/shared/hisat2-2.2.1/hisat2 \
+-x /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/GCA_000444245.1_356a-valid.index \
+-1 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352254_1.fastq   \
+-2 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352254_2.fastq \
+-S ../output/SRR10352254.sam \
+--threads 7 
+
+```
+
+```{r, engine = 'bash'}
+/home/shared/samtools-1.12/samtools view \
+-@ 7 \
+-Su ../output/SRR10352254.sam \
+| /home/shared/samtools-1.12/samtools sort - \
+-@ 7 \
+-o ../output/SRR10352254.sorted.bam 
+/home/shared/samtools-1.12/samtools index ../output/SRR10352254.sorted.bam
+```
+
+### Deleting uncessary files
+Once you have completed the alignment for each of your queries, delete unneeded index and SAM files.
+
+```{r, engine = 'bash'}
+rm ./ GCA_000444245.1_356a-valid*.ht2
+rm ./*.sam
+```
+
+## 4. Quantifying gene expression levels
+We will now quantify gene expression levels from the BAM files we just generated.
