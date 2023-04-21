@@ -145,7 +145,7 @@ We will align each RNAseq file one at a time just replacing the input fastq file
 /home/shared/samtools-1.12/samtools index ../output/SRR10352254.sorted.bam
 ```
 
-### Deleting uncessary files
+### Deleting unecessary files
 Once you have completed the alignment for each of your queries, delete unneeded index and SAM files.
 
 ```{r, engine = 'bash'}
@@ -153,5 +153,45 @@ rm ./ GCA_000444245.1_356a-valid*.ht2
 rm ./*.sam
 ```
 
-## 4. Quantifying gene expression levels
-We will now quantify gene expression levels from the BAM files we just generated.
+## 4. Generating a reference transcriptome annotation to input into trinity?
+I can't make abundance estimates until I have gtf it seems. Here is an example of the code chunk that ChatGPT spit out for me. 
+
+"To generate a reference transcriptome annotation in GTF format using StringTie, you can follow these steps:
+
+1. Align RNA-seq reads to the genome assembly: Use a program such as HISAT2 to align RNA-seq reads to the genome assembly. This will produce a sorted BAM file containing the alignment information.
+
+2. Generate a GTF file for genome annotation: Use a program such as MAKER or BRAKER to generate a GTF file for genome annotation. This file should contain the predicted gene models, along with their exon and intron boundaries.
+
+3. Run StringTie to assemble transcripts: Use the sorted BAM file from step 1 and the GTF file from step 2 as input to StringTie. This will assemble the transcripts and produce a GTF file containing the transcript annotations.
+
+Here's an example command for running StringTie:
+
+```{r, engine='bash'}
+stringtie [sorted_bam_file] -G [gtf_file] -o [output_gtf_file] -p [num_threads] -l [label_prefix]
+```
+
+Replace [sorted_bam_file] with the name of your sorted BAM file, [gtf_file] with the name of your genome annotation GTF file, [output_gtf_file] with the name you want to give to your output transcript annotation file, [num_threads] with the number of threads you want to use for parallel processing, and [label_prefix] with a prefix to use for the transcript IDs.
+
+After running StringTie, you should have a GTF file containing the transcript annotations for your genome assembly."
+
+## 5. Quantifying gene expression levels
+
+We will now create transcript abundance estimates from the sorted BAM files we just generated.
+
+For this we will use the "align_and_estimate_abundance.pl" script included with Trinity.
+
+
+```{bash}
+perl /home/shared/trinityrnaseq-v2.12.0/util/align_and_estimate_abundance.pl \
+--transcripts reference.gtf \
+--seqType sam \
+--left reads_1.fq \
+--right reads_2.fq \
+--est_method RSEM \
+--aln_method bowtie2 \
+--prep_reference \
+--thread_count 4 \
+--output_dir output_dir
+
+```
+
