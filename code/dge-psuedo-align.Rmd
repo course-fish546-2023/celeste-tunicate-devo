@@ -1,0 +1,69 @@
+---
+title: "dge-pseudo-alignment"
+output: html_document
+date: "2023-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Download the 99k mRNA "complete records" for *Botryllus schlosseri* from NCBI as FASTA file and store in data folder. 
+
+Then run the following code chunk which will use the index command in Kallisto to create an index of all 99k records. It renames that fasta file you upload to 'bsc_rna.index'.
+```{r, engine = 'bash'}
+/home/shared/kallisto/kallisto \
+index -i \
+/home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index \
+/home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/sequence.fasta
+```
+
+Running the following code chunks produces a bunch of errors regarding file pathways. I think I am running into issues because my RNAseq data is in a different hard drive than my current working directory. However, If I simplify the code chunk to ask it for just one of my files (thus skipping the find command). It's possible to run the Kallisto quant command. Eventually, I may come back to this code chunk to troubleshoot.  
+```{bash}
+find /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/*_1.fastq \
+| sed 's/_1.fastq$//' \
+| xargs -I{} /home/shared/kallisto/kallisto \
+quant -i /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index \
+-o /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/kallisto_01/{} \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/{}_1.fastq /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/{}_2.fastq
+
+```
+# Conducting psueo-alignments one query at a time...
+### Quant SRR10352205
+```{bash}
+/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
+-o ../output/kallisto_01/SRR10352205 \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_2.fastq
+```
+### Quant SRR10352206
+
+```{bash}
+/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
+-o ../output/kallisto_01/SRR10352206 \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352206_1.fastq \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352206_2.fastq
+```
+
+### Quant SRR10352224
+
+```{bash}
+/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
+-o ../output/kallisto_01/SRR10352224 \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352224_1.fastq \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352224_2.fastq
+```
+
+### Quant SRR10352254
+```{bash}
+/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
+-o ../output/kallisto_01/SRR10352254 \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352254_1.fastq \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352254_2.fastq
+```
