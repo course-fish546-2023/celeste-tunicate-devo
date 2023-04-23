@@ -60,6 +60,8 @@ It seems like at least in the code chunk I need to specify the absolute path in 
 
 We will align each RNAseq file one at a time just replacing the input fastq file and output name.
 
+The output will be sorted.bam files that we can then use downstream to create transcript abundance estimates.
+
 ### Query SRR10352205
 ```{r, engine= 'bash'}
 /home/shared/hisat2-2.2.1/hisat2 \
