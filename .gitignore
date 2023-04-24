@@ -31,3 +31,8 @@ vignettes/*.pdf
 *.fna
 *.ht2
 *.sam
+*.h5
+*json
+*.tsv
+*index
+kallisto*
