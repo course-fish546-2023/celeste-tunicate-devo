@@ -1,0 +1,137 @@
+---
+title: "Bioinformatics Workflow Project Update"
+author: "Celeste Valdivia"
+format: revealjs
+editor: visual
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Evaluate code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
+```
+
+## Project goal
+
+Conduct differential expression analysis from 4 of the 90 RNAseq files produced from [Kowarsky et al., 2021](https://doi.org/10.1016/j.celrep.2020.108681).
+
+| Run         | Bases       | dev_stage | TISSUE       |
+|-------------|-------------|-----------|--------------|
+| SRR10352205 | 10576501436 | b5-b6     | whole system |
+| SRR10352206 | 3609019200  | b5-b6     | whole system |
+| SRR10352224 | 4847587800  | TO        | whole system |
+| SRR10352254 | 5482368900  | TO        | whole system |
+
+## Visualization of blastogenic stages {background-image="https://github.com/valeste/valeste.github.io/blob/master/assets/img/sex_asex_devo_TO_b5.jpeg?raw=true" background-size="700px"}
+
+## Methods Overview
+
+1.   Access RNAseq data from NCBI
+2.   Access genome or transcriptome reference
+3.   QAQC RNAseq data
+4.   Align RNAseq data to reference
+5.   Make transcript count matrix
+6.   Conduct differential expression analysis using DESeq2
+
+## 1.RNAseq data from NCBI
+
+Here we bypass the prefetch command available in the SRA Toolkit, this will simply make the downloading time longer.
+
+```{r, engine = 'bash'}
+/home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
+--outdir /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw \
+--progress \
+SRR10352205 \
+SRR10352206 \
+SRR10352224 \
+SRR10352254
+```
+
+## 2.Using mRNA "complete records" from NCBI
+To make a reference index I downloaded ~99k mRNA records for my species of interest from NCBI. (~80MB)
+
+I then built an index with Kallisto using the following code chunk:
+```{r, engine = 'bash'}
+/home/shared/kallisto/kallisto \
+index -i \
+/home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index \
+/home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/sequence.fasta
+```
+
+## 4.Pseudo-alignment
+
+Below is an example of a pseudo-alignment I did with Kallisto for one of my RNAseq files:
+```{r, engine = 'bash'}
+/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
+-o ../output/kallisto_01/SRR10352205 \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_2.fastq
+```
+
+I opted to copy this code chunk for each file because I kept receiving errors when I tried to use xargs since my fastq RNAseq files are stored in a different directory than working directory with my index. 
+
+## 4. Count matrix
+I made a transcript count matrix using Trinity with the following code chunk:
+```{r, engine = 'bash'}
+perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
+--est_method kallisto \
+    --gene_trans_map none \
+    --out_prefix ../output/kallisto_01 \
+    --name_sample_by_basedir \
+    ../output/kallisto_01/SRR10352205/abundance.tsv \
+    ../output/kallisto_01/SRR10352206/abundance.tsv \
+    ../output/kallisto_01/SRR10352224/abundance.tsv \
+    ../output/kallisto_01/SRR10352254/abundance.tsv \
+```
+
+## 6. Using DESeq2 
+
+Here we will normalize the count matrix and identify significant differences:
+```{r}
+# Read in count matrix
+countmatrix <- round(read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t'))
+rownames(countmatrix) <- countmatrix$X
+countmatrix <- countmatrix[,-1]
+countmatrix <- round(countmatrix, 0)
+str(countmatrix)
+# Make a new data frame containing info about conditions in study
+deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
+                             type=factor(rep("paired-end", 4)))
+rownames(deseq2.colData) <- colnames(data)
+deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
+                                     colData = deseq2.colData, 
+                                     design = ~ condition)
+# Run a DESeq analysis
+deseq2.dds <- DESeq(deseq2.dds)
+deseq2.res <- results(deseq2.dds)
+deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ]
+
+# Count number of hits with adjusted p-value less then 0.05
+dim(deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ])
+```
+
+## Preliminary Results
+```{r}
+tmp <- deseq2.res
+# The main plot
+plot(tmp$baseMean, tmp$log2FoldChange, pch=20, cex=0.45, ylim=c(-3, 3), log="x", col="darkgray",
+     main="DEG Blastogenic Stage  (pval <= 0.05)",
+     xlab="mean of normalized counts",
+     ylab="Log2 Fold Change")
+# Getting the significant points and plotting them again so they're a different color
+tmp.sig <- deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ]
+points(tmp.sig$baseMean, tmp.sig$log2FoldChange, pch=20, cex=0.45, col="red")
+# 2 FC lines
+abline(h=c(-1,1), col="blue")
+```
+
+## Next Steps
+
+Go back and do a proper transcriptome alignment. Found annotated genome on *Botryllus schlosseri* Genome Project [web server](http://botryllus.stanford.edu/botryllusgenome/download/).
