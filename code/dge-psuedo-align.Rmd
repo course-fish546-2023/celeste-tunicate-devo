@@ -147,6 +147,25 @@ points(tmp.sig$baseMean, tmp.sig$log2FoldChange, pch=20, cex=0.45, col="red")
 abline(h=c(-1,1), col="blue")
 ```
 
+Plotting only the significant points:
+```{r}
+mp <- deseq2.res
+sigPoints <- !is.na(mp$padj) & mp$padj <= 0.05
+# Define color palette
+colorPalette <- c(gray(seq(0.8, 0.2, length.out = 100)), "red")
+
+# The main plot
+plot(mp$baseMean[sigPoints], mp$log2FoldChange[sigPoints], pch=10, cex=0.45, ylim=c(-3, 3), log="x", col=colorPalette[1],
+     main="Differentially Expressed Genes in Blastogenic Stage (pval <= 0.05)",
+     xlab="Mean Expression Level", ylab="Log2 Fold Change (vs Control)", cex.lab=1.5, cex.main=2)
+# Getting the significant points and plotting them again so they're a different color
+
+points(mp$baseMean[sigPoints], mp$log2FoldChange[sigPoints], pch=20, cex=0.45, col=colorPalette[length(colorPalette)])
+# 2 FC lines
+abline(h=c(-1,1), col="blue")
+# Add legend
+```
+
 ```{r}
 write.table(tmp.sig, "../output/DEGlist.tab", row.names = T)
 ```
