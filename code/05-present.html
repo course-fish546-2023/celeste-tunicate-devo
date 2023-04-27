@@ -10,7 +10,7 @@
   <meta name="generator" content="quarto-1.2.335">
 
   <meta name="author" content="Celeste Valdivia">
-  <title>Week 5 Research Project Update</title>
+  <title>Bioinformatics Workflow Project Update</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -388,7 +388,7 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">Week 5 Research Project Update</h1>
+  <h1 class="title">Bioinformatics Workflow Project Update</h1>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -454,8 +454,8 @@ Celeste Valdivia
 </ol>
 </section>
 <section id="rnaseq-data-from-ncbi" class="slide level2">
-<h2>1.RNAseq data from NCBI</h2>
-<p>Here we bypass the prefetch command available in the SRA Toolkit, this will simply make the downloading time longer.</p>
+<h2>1. RNAseq data from NCBI</h2>
+<p>Here we bypassed the prefetch command available in the SRA Toolkit, and used fasterq-dump to download fastq.gz files to our out-directory.</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1"></a><span class="ex">/home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump</span> <span class="dt">\</span></span>
 <span id="cb1-2"><a href="#cb1-2"></a>--outdir /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw <span class="dt">\</span></span>
@@ -466,9 +466,9 @@ Celeste Valdivia
 <span id="cb1-7"><a href="#cb1-7"></a>SRR10352254</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="using-mrna-complete-records-from-ncbi" class="slide level2">
-<h2>2.Using mRNA “complete records” from NCBI</h2>
-<p>To make a reference index I downloaded ~99k mRNA records for my species of interest from NCBI. (~80MB)</p>
+<section id="created-index-with-kallisto" class="slide level2">
+<h2>2. Created index with Kallisto</h2>
+<p>To make a reference index I used ~99k mRNA “complete records” for my species of interest from NCBI.</p>
 <p>I then built an index with Kallisto using the following code chunk:</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode numberSource bash number-lines code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1"></a><span class="ex">/home/shared/kallisto/kallisto</span> <span class="dt">\</span></span>
@@ -504,51 +504,64 @@ Celeste Valdivia
 <span id="cb4-9"><a href="#cb4-9"></a>    ../output/kallisto_01/SRR10352254/abundance.tsv <span class="dt">\</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
+<section id="viewing-the-initial-count-matrix" class="slide level2">
+<h2>Viewing the initial count matrix</h2>
+<p>Here we will tidy up the count matrix and take a peak at the first 6 rows.</p>
+<div class="cell" data-layout-align="center">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a>countmatrix <span class="ot">&lt;-</span> <span class="fu">read.delim</span>(<span class="st">"../output/kallisto_01.isoform.counts.matrix"</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span>
+<span id="cb5-2"><a href="#cb5-2"></a><span class="fu">rownames</span>(countmatrix) <span class="ot">&lt;-</span> countmatrix<span class="sc">$</span>X <span class="co">#this line renames the row names from 1-n to the value of the first column called x</span></span>
+<span id="cb5-3"><a href="#cb5-3"></a>countmatrix <span class="ot">&lt;-</span> countmatrix[,<span class="sc">-</span><span class="dv">1</span>] <span class="co">#this gets rid of the first column</span></span>
+<span id="cb5-4"><a href="#cb5-4"></a>countmatrix <span class="ot">&lt;-</span> <span class="fu">round</span>(countmatrix, <span class="dv">0</span>) <span class="co">#rounds values in count matrix</span></span>
+<span id="cb5-5"><a href="#cb5-5"></a><span class="fu">head</span>(countmatrix)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>           SRR10352205 SRR10352206 SRR10352224 SRR10352254
+JG353837.1           0           0           0           0
+JG390417.1         840          26           0           0
+JG368003.1           0          28           0           0
+JG365003.1           0           0           0           0
+JG314272.1           0           0          17           2
+JG329595.1           0           0           0           0</code></pre>
+</div>
+</div>
+<p>Checked how many genes are in the count matrix</p>
+<div class="cell" data-layout-align="center">
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Number of genes to evaluate: 99708"</code></pre>
+</div>
+</div>
+</section>
 <section id="using-deseq2" class="slide level2">
 <h2>6. Using DESeq2</h2>
-<p>Here we will normalize the count matrix and identify significant differences:</p>
+<p>Now we will follow the standard DESeq workflow</p>
 <div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1"></a><span class="co"># Read in count matrix</span></span>
-<span id="cb5-2"><a href="#cb5-2"></a>countmatrix <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">read.delim</span>(<span class="st">"../output/kallisto_01.isoform.counts.matrix"</span>, <span class="at">header =</span> <span class="cn">TRUE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>))</span>
-<span id="cb5-3"><a href="#cb5-3"></a><span class="fu">rownames</span>(countmatrix) <span class="ot">&lt;-</span> countmatrix<span class="sc">$</span>X</span>
-<span id="cb5-4"><a href="#cb5-4"></a>countmatrix <span class="ot">&lt;-</span> countmatrix[,<span class="sc">-</span><span class="dv">1</span>]</span>
-<span id="cb5-5"><a href="#cb5-5"></a>countmatrix <span class="ot">&lt;-</span> <span class="fu">round</span>(countmatrix, <span class="dv">0</span>)</span>
-<span id="cb5-6"><a href="#cb5-6"></a><span class="fu">str</span>(countmatrix)</span>
-<span id="cb5-7"><a href="#cb5-7"></a><span class="co"># Make a new data frame containing info about conditions in study</span></span>
-<span id="cb5-8"><a href="#cb5-8"></a>deseq2.colData <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">condition=</span><span class="fu">factor</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">"b5-b6"</span>, <span class="dv">2</span>), <span class="fu">rep</span>(<span class="st">"TO"</span>, <span class="dv">2</span>))), </span>
-<span id="cb5-9"><a href="#cb5-9"></a>                             <span class="at">type=</span><span class="fu">factor</span>(<span class="fu">rep</span>(<span class="st">"paired-end"</span>, <span class="dv">4</span>)))</span>
-<span id="cb5-10"><a href="#cb5-10"></a><span class="fu">rownames</span>(deseq2.colData) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(data)</span>
-<span id="cb5-11"><a href="#cb5-11"></a>deseq2.dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(<span class="at">countData =</span> countmatrix,</span>
-<span id="cb5-12"><a href="#cb5-12"></a>                                     <span class="at">colData =</span> deseq2.colData, </span>
-<span id="cb5-13"><a href="#cb5-13"></a>                                     <span class="at">design =</span> <span class="sc">~</span> condition)</span>
-<span id="cb5-14"><a href="#cb5-14"></a><span class="co"># Run a DESeq analysis</span></span>
-<span id="cb5-15"><a href="#cb5-15"></a>deseq2.dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(deseq2.dds)</span>
-<span id="cb5-16"><a href="#cb5-16"></a>deseq2.res <span class="ot">&lt;-</span> <span class="fu">results</span>(deseq2.dds)</span>
-<span id="cb5-17"><a href="#cb5-17"></a>deseq2.res <span class="ot">&lt;-</span> deseq2.res[<span class="fu">order</span>(<span class="fu">rownames</span>(deseq2.res)), ]</span>
-<span id="cb5-18"><a href="#cb5-18"></a></span>
-<span id="cb5-19"><a href="#cb5-19"></a><span class="co"># Count number of hits with adjusted p-value less then 0.05</span></span>
-<span id="cb5-20"><a href="#cb5-20"></a><span class="fu">dim</span>(deseq2.res[<span class="sc">!</span><span class="fu">is.na</span>(deseq2.res<span class="sc">$</span>padj) <span class="sc">&amp;</span> deseq2.res<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.05</span>, ])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># Make a new data frame containing info about conditions in study</span></span>
+<span id="cb8-2"><a href="#cb8-2"></a>deseq2.colData <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">condition=</span><span class="fu">factor</span>(<span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">"b5-b6"</span>, <span class="dv">2</span>), <span class="fu">rep</span>(<span class="st">"TO"</span>, <span class="dv">2</span>))), </span>
+<span id="cb8-3"><a href="#cb8-3"></a>                             <span class="at">type=</span><span class="fu">factor</span>(<span class="fu">rep</span>(<span class="st">"paired-end"</span>, <span class="dv">4</span>)))</span>
+<span id="cb8-4"><a href="#cb8-4"></a><span class="fu">rownames</span>(deseq2.colData) <span class="ot">&lt;-</span> <span class="fu">colnames</span>(data)</span>
+<span id="cb8-5"><a href="#cb8-5"></a>deseq2.dds <span class="ot">&lt;-</span> <span class="fu">DESeqDataSetFromMatrix</span>(<span class="at">countData =</span> countmatrix,</span>
+<span id="cb8-6"><a href="#cb8-6"></a>                                     <span class="at">colData =</span> deseq2.colData, </span>
+<span id="cb8-7"><a href="#cb8-7"></a>                                     <span class="at">design =</span> <span class="sc">~</span> condition)</span>
+<span id="cb8-8"><a href="#cb8-8"></a><span class="co"># Run a DESeq analysis</span></span>
+<span id="cb8-9"><a href="#cb8-9"></a>deseq2.dds <span class="ot">&lt;-</span> <span class="fu">DESeq</span>(deseq2.dds)</span>
+<span id="cb8-10"><a href="#cb8-10"></a>deseq2.res <span class="ot">&lt;-</span> <span class="fu">results</span>(deseq2.dds)</span>
+<span id="cb8-11"><a href="#cb8-11"></a>deseq2.res <span class="ot">&lt;-</span> deseq2.res[<span class="fu">order</span>(<span class="fu">rownames</span>(deseq2.res)), ]</span>
+<span id="cb8-12"><a href="#cb8-12"></a>hits <span class="ot">&lt;-</span> <span class="fu">nrow</span>(deseq2.res[<span class="sc">!</span><span class="fu">is.na</span>(deseq2.res<span class="sc">$</span>padj) <span class="sc">&amp;</span> deseq2.res<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.05</span>, ])</span>
+<span id="cb8-13"><a href="#cb8-13"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of differentially expressed genes with p-value less than 0.05:"</span>, hits))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Number of differentially expressed genes with p-value less than 0.05: 1971"</code></pre>
+</div>
 </div>
 </section>
 <section id="preliminary-results" class="slide level2">
 <h2>Preliminary Results</h2>
-<div class="cell" data-layout-align="center">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>tmp <span class="ot">&lt;-</span> deseq2.res</span>
-<span id="cb6-2"><a href="#cb6-2"></a><span class="co"># The main plot</span></span>
-<span id="cb6-3"><a href="#cb6-3"></a><span class="fu">plot</span>(tmp<span class="sc">$</span>baseMean, tmp<span class="sc">$</span>log2FoldChange, <span class="at">pch=</span><span class="dv">20</span>, <span class="at">cex=</span><span class="fl">0.45</span>, <span class="at">ylim=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">3</span>, <span class="dv">3</span>), <span class="at">log=</span><span class="st">"x"</span>, <span class="at">col=</span><span class="st">"darkgray"</span>,</span>
-<span id="cb6-4"><a href="#cb6-4"></a>     <span class="at">main=</span><span class="st">"DEG Blastogenic Stage  (pval &lt;= 0.05)"</span>,</span>
-<span id="cb6-5"><a href="#cb6-5"></a>     <span class="at">xlab=</span><span class="st">"mean of normalized counts"</span>,</span>
-<span id="cb6-6"><a href="#cb6-6"></a>     <span class="at">ylab=</span><span class="st">"Log2 Fold Change"</span>)</span>
-<span id="cb6-7"><a href="#cb6-7"></a><span class="co"># Getting the significant points and plotting them again so they're a different color</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>tmp.sig <span class="ot">&lt;-</span> deseq2.res[<span class="sc">!</span><span class="fu">is.na</span>(deseq2.res<span class="sc">$</span>padj) <span class="sc">&amp;</span> deseq2.res<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.05</span>, ]</span>
-<span id="cb6-9"><a href="#cb6-9"></a><span class="fu">points</span>(tmp.sig<span class="sc">$</span>baseMean, tmp.sig<span class="sc">$</span>log2FoldChange, <span class="at">pch=</span><span class="dv">20</span>, <span class="at">cex=</span><span class="fl">0.45</span>, <span class="at">col=</span><span class="st">"red"</span>)</span>
-<span id="cb6-10"><a href="#cb6-10"></a><span class="co"># 2 FC lines</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a><span class="fu">abline</span>(<span class="at">h=</span><span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">col=</span><span class="st">"blue"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-</section>
+
+<img data-src="05-present_files/figure-revealjs/unnamed-chunk-8-1.png" width="576" class="r-stretch quarto-figure-center"></section>
 <section id="next-steps" class="slide level2">
 <h2>Next Steps</h2>
-<p>Go back and do a proper transcriptome alignment. Found annotated genome on <em>Botryllus schlosseri</em> Genome Project <a href="http://botryllus.stanford.edu/botryllusgenome/download/">web server</a>.</p>
+<ol type="1">
+<li>Go back and do a proper transcriptome alignment. Found annotated genome on <em>Botryllus schlosseri</em> Genome Project <a href="http://botryllus.stanford.edu/botryllusgenome/download/">web server</a>.</li>
+<li>Play with making a better looking plot for my DEG analysis</li>
+</ol>
 <div class="footer footer-default">
 
 </div>

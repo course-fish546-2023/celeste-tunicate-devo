@@ -21,14 +21,11 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-
+# Accessing a reference to produce an index
 Download the 99k mRNA "complete records" for *Botryllus schlosseri* from NCBI as FASTA file and store in data folder. 
 
-Then run the following code chunk which will use the index command in Kallisto to create an index of all 99k records. It renames that fasta file you upload to 'bsc_rna.index'.
+Then run the following code chunk which will use the index command in Kallisto to create a reference index of all 99k records. It renames that fasta file you upload to 'bsc_rna.index'.
+
 ```{r, engine = 'bash'}
 /home/shared/kallisto/kallisto \
 index -i \
@@ -90,7 +87,7 @@ quant -i /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index
 # Creating gene expression matracies from kallisto output files
 
 This command runs the abundance_estimates_to_matrix.pl script from the Trinity RNA-seq assembly software package to create a gene expression matrix from kallisto output files.
-```{bash}
+```{r, engine = 'bash'}
 perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
 --est_method kallisto \
     --gene_trans_map none \
@@ -108,28 +105,25 @@ perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
 
 ```{r}
 countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t')
-rownames(countmatrix) <- countmatrix$X
-countmatrix <- countmatrix[,-1]
+rownames(countmatrix) <- countmatrix$X #this line renames the row names from 1-n to the value of the first column called x
+countmatrix <- countmatrix[,-1] #this gets rid of the first column
+countmatrix <- round(countmatrix, 0) #rounds values in count matrix
 head(countmatrix)
 ```
 
-```{r}
-countmatrix <- round(countmatrix, 0)
-str(countmatrix)
-```
-
+The following code chunk will make a new data frame that will vontain information about the treatment groups and the type of RNAseq data produced. This will be called the object "deseq2.colData". We then use the DESeqDataSetFromMatrix function from the DESeq2 package
 ```{r}
 deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
                              type=factor(rep("paired-end", 4)))
-rownames(deseq2.colData) <- colnames(data)
+rownames(deseq2.colData) <- colnames(data) #not sure what the purpose of this line is, it doesn't seem to do anything
 deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
                                      colData = deseq2.colData, 
                                      design = ~ condition)
 ```
 
 ```{r}
-deseq2.dds <- DESeq(deseq2.dds)
-deseq2.res <- results(deseq2.dds)
+deseq2.dds <- DESeq(deseq2.dds) #takes the DESeq data set we created and conducts a DESeq analysis
+deseq2.res <- results(deseq2.dds) #here we take a look at the results of the analysis
 deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ]
 head(deseq2.res)
 ```
