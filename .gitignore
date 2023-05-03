@@ -36,3 +36,10 @@ vignettes/*.pdf
 *.tsv
 *index
 kallisto*
+*.gff
+*rsconnect
+*html
+*.png
+*tab
+*bam
+*bam.bai
