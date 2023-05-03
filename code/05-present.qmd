@@ -1,5 +1,5 @@
 ---
-title: "Bioinformatics Workflow Project Update"
+title: "RNAseq Data Anaylsis Workflow Update"
 author: "Celeste Valdivia"
 format: revealjs
 editor: visual
@@ -38,18 +38,17 @@ Conduct differential expression analysis from 4 of the 90 RNAseq files produced 
 
 ## Methods Overview
 
-1.  Access RNAseq data from NCBI
-2.  Access genome or transcriptome reference
-3.  QAQC RNAseq data
-4.  Align RNAseq data to reference
+1.  Access RNAseq data
+2.  Create a refernce index
+3.  Align RNAseq data to reference
 5.  Make transcript count matrix
 6.  Conduct differential expression analysis using DESeq2
 
-## 1. RNAseq data from NCBI
+## Accessing RNAseq data
 
-Here we bypassed the prefetch command available in the SRA Toolkit, and used fasterq-dump to download fastq.gz files to our out-directory.
-
+For the data we will generate in our own project, the SRA Toolkit will not be used. Instead I plan to curl the data directly from [Gannet server](https://gannet.fish.washington.edu/), a computer available for data hosting in the Roberts Lab.
 ```{r, engine = 'bash'}
+#| code-line-numbers: "1"
 /home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
 --outdir /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw \
 --progress \
@@ -59,24 +58,20 @@ SRR10352224 \
 SRR10352254
 ```
 
-## 2. Created index with Kallisto
+## Transcript Quantification (psuedo-alignment)
 
-To make a reference index I used \~99k mRNA "complete records" for my species of interest from NCBI.
-
-I then built an index with Kallisto using the following code chunk:
-
+Created a reference with 'index' command of Kallisto using ~99k mRNA "complete records" from NCBI.
 ```{r, engine = 'bash'}
+#| code-line-numbers: "2"
 /home/shared/kallisto/kallisto \
 index -i \
 /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index \
 /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/sequence.fasta
 ```
 
-## 4.Pseudo-alignment
-
-Below is an example of a pseudo-alignment I did with Kallisto for one of my RNAseq files:
-
+Use the 'quant' command on Kallisto to conduct the psuedo-alignment:
 ```{r, engine = 'bash'}
+#| code-line-numbers: "1"
 /home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
 -o ../output/kallisto_01/SRR10352205 \
 -t 40 \
@@ -84,29 +79,26 @@ Below is an example of a pseudo-alignment I did with Kallisto for one of my RNAs
 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_2.fastq
 ```
 
-I opted to copy this code chunk for each file because I kept receiving errors when I tried to use xargs since my fastq RNAseq files are stored in a different directory than working directory with my index.
+## Making a transcript count matrix with Trinity
 
-## 4. Count matrix
-
-I made a transcript count matrix using Trinity with the following code chunk:
-
-```{r, engine = 'bash'}
+Make transcript count matrix using the perl abundance_estimates_to_matrix Trinity script: 
+```{r, engine = 'bash', eval = FALSE}
+#| code-line-numbers: "1"
 perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
 --est_method kallisto \
-    --gene_trans_map none \
-    --out_prefix ../output/kallisto_01 \
+--gene_trans_map none \
+--out_prefix ../output/kallisto_01 \
     --name_sample_by_basedir \
     ../output/kallisto_01/SRR10352205/abundance.tsv \
     ../output/kallisto_01/SRR10352206/abundance.tsv \
     ../output/kallisto_01/SRR10352224/abundance.tsv \
-    ../output/kallisto_01/SRR10352254/abundance.tsv \
+    ../output/kallisto_01/SRR10352254/abundance.tsv 
 ```
-
 
 ## Viewing the initial count matrix
 Here we will tidy up the count matrix and take a peak at the first 6 rows.
 
-```{r, eval=TRUE}
+```{r, eval=TRUE, echo=FALSE}
 countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t')
 rownames(countmatrix) <- countmatrix$X #this line renames the row names from 1-n to the value of the first column called x
 countmatrix <- countmatrix[,-1] #this gets rid of the first column
@@ -122,6 +114,7 @@ print(paste("Number of genes to evaluate:", nrow(countmatrix)))
 ## 6. Using DESeq2 
 Now we will follow the standard DESeq workflow
 ```{r, eval=TRUE}
+#| code-line-numbers: "9"
 # Make a new data frame containing info about conditions in study
 deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
                              type=factor(rep("paired-end", 4)))
@@ -137,24 +130,56 @@ hits <- nrow(deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ])
 print(paste("Number of differentially expressed genes with p-value less than 0.05:", hits))
 ```
 
-## Preliminary Results
-```{r, eval = TRUE, echo =FALSE}
-tmp <- deseq2.res
-# The main plot
-plot(tmp$baseMean, tmp$log2FoldChange, pch=20, cex=0.45, ylim=c(-3, 3), log="x", col="darkgray",
-     main="DEG Blastogenic Stage  (pval <= 0.05)",
-     xlab="mean of normalized counts",
-     ylab="Log2 Fold Change")
-# Getting the significant points and plotting them again so they're a different color
-tmp.sig <- deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ]
-points(tmp.sig$baseMean, tmp.sig$log2FoldChange, pch=20, cex=0.45, col="red")
-# 2 FC lines
-abline(h=c(-1,1), col="blue")
+## Preliminary results: Exploratory PCA
+```{r, echo = F, eval =TRUE}
+vsd <- vst(deseq2.dds, blind = FALSE)
+plotPCA(vsd, intgroup = "condition")
+```
+
+## Preliminary results: Exploratory heatmap
+```{r, eval=TRUE, echo=FALSE}
+# Select top 50 differentially expressed genes
+res <- results(deseq2.dds)
+res_ordered <- res[order(res$padj), ]
+top_genes <- row.names(res_ordered)[1:50]
+
+# Extract counts and normalize
+counts <- counts(deseq2.dds, normalized = TRUE)
+counts_top <- counts[top_genes, ]
+
+# Log-transform counts
+log_counts_top <- log2(counts_top + 1)
+
+# Generate heatmap
+pheatmap(log_counts_top, scale = "row")
+```
+
+## Preliminary results: Exploratory Volcano Plot
+```{r, eval=TRUE, echo=FALSE}
+# Prepare the data for plotting
+res_df <- as.data.frame(deseq2.res)
+res_df$gene <- row.names(res_df)
+
+# Create volcano plot
+volcano_plot <- ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj), color = padj < 0.05)) +
+  geom_point(alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = c("grey", "red")) +
+  labs(title = "Volcano Plot",
+       x = "Log2 Fold Change",
+       y = "-Log10 Adjusted P-value",
+       color = "Significantly\nDifferentially Expressed") +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "top")
+
+print(volcano_plot)
 ```
 
 ## Next Steps
 
 1. Go back and do a proper transcriptome alignment. Found annotated genome on *Botryllus schlosseri* Genome Project [web server](http://botryllus.stanford.edu/botryllusgenome/download/).
 2. Play with making a better looking plot for my DEG analysis
+3. Go back and do further quality assessment and control since there is so much variance within one of my groups due to differences in sequencing depth amongst samples of the same group.
 
 
