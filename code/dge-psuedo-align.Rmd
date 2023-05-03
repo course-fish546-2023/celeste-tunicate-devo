@@ -1,5 +1,5 @@
 ---
-title: "Differential gene expression analysis using Kallisto"
+title: "Differential gene expression analysis & PCA using Kallisto"
 output: md_document
 date: "2023-04-22"
 ---
@@ -96,7 +96,7 @@ perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
     ../output/kallisto_01/SRR10352205/abundance.tsv \
     ../output/kallisto_01/SRR10352206/abundance.tsv \
     ../output/kallisto_01/SRR10352224/abundance.tsv \
-    ../output/kallisto_01/SRR10352254/abundance.tsv \
+    ../output/kallisto_01/SRR10352254/abundance.tsv 
 
 ```
 
@@ -111,7 +111,7 @@ countmatrix <- round(countmatrix, 0) #rounds values in count matrix
 head(countmatrix)
 ```
 
-The following code chunk will make a new data frame that will vontain information about the treatment groups and the type of RNAseq data produced. This will be called the object "deseq2.colData". We then use the DESeqDataSetFromMatrix function from the DESeq2 package
+The following code chunk will make a new data frame that will contain information about the treatment groups and the type of RNAseq data produced. This will be called the object "deseq2.colData". We then use the DESeqDataSetFromMatrix function from the DESeq2 package
 ```{r}
 deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
                              type=factor(rep("paired-end", 4)))
@@ -137,7 +137,7 @@ dim(deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ])
 tmp <- deseq2.res
 # The main plot
 plot(tmp$baseMean, tmp$log2FoldChange, pch=20, cex=0.45, ylim=c(-3, 3), log="x", col="darkgray",
-     main="DEG Blastogenic Stage  (pval <= 0.05)",
+     main="DEG Dessication  (pval <= 0.05)",
      xlab="mean of normalized counts",
      ylab="Log2 Fold Change")
 # Getting the significant points and plotting them again so they're a different color
@@ -147,7 +147,52 @@ points(tmp.sig$baseMean, tmp.sig$log2FoldChange, pch=20, cex=0.45, col="red")
 abline(h=c(-1,1), col="blue")
 ```
 
-Plotting only the significant points:
+PCA plot:
+```{r}
+vsd <- vst(deseq2.dds, blind = FALSE)
+plotPCA(vsd, intgroup = "condition")
+```
+
+```{r}
+# Select top 50 differentially expressed genes
+res <- results(deseq2.dds)
+res_ordered <- res[order(res$padj), ]
+top_genes <- row.names(res_ordered)[1:50]
+
+# Extract counts and normalize
+counts <- counts(deseq2.dds, normalized = TRUE)
+counts_top <- counts[top_genes, ]
+
+# Log-transform counts
+log_counts_top <- log2(counts_top + 1)
+
+# Generate heatmap
+pheatmap(log_counts_top, scale = "row")
+```
+
+```{r}
+# Prepare the data for plotting
+res_df <- as.data.frame(deseq2.res)
+res_df$gene <- row.names(res_df)
+
+# Create volcano plot
+volcano_plot <- ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj), color = padj < 0.05)) +
+  geom_point(alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = c("grey", "red")) +
+  labs(title = "Volcano Plot",
+       x = "Log2 Fold Change",
+       y = "-Log10 Adjusted P-value",
+       color = "Significantly\nDifferentially Expressed") +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "top")
+
+print(volcano_plot)
+```
+
+# Improving look of initial exploratory plots
+Plotting only the significant points on deg:
 ```{r}
 mp <- deseq2.res
 sigPoints <- !is.na(mp$padj) & mp$padj <= 0.05
