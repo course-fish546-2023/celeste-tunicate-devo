@@ -22,7 +22,7 @@ gzip -d GCA_000444245.1_356a-chromosome-assembly_genomic.fna.gz
 ```
 
 ## 2. Accessing annotated genome
-Downloading the annotated genome from the Botryllus schlosseri Genome Project:
+Downloading the **complete** annotated genome from the [*Botryllus schlosseri* Genome Project](http://botryllus.stanford.edu/botryllusgenome/download/):
 ```{r, engine = 'bash'}
 cd ../data
 curl --insecure -O http://botryllus.stanford.edu/botryllusgenome/download/botznik-chr-ctg.gff
@@ -31,8 +31,15 @@ curl --insecure -O http://botryllus.stanford.edu/botryllusgenome/download/botzni
 Taking a peak at the annotated genome:
 ```{bash}
 cd ../data/genome-alignment
-tail -n 20 botznik-chr-all.gff
+tail -n 70 botznik-chr-all.gff
 ```
+When running through workflow, particularly at the development of gtf files, it says that this is not a valid reference gff. Below I will curl a different gff from the same server. I tried all the gff's from this server and none of them produce exon and splice site tabs or are convertable into gtf files with string tie.
+
+```{r, engine = 'bash'}
+cd ../data/genome-alignment
+curl --insecure -O http://botryllus.stanford.edu/botryllusgenome/download/botznik-chr-ctg.gff
+```
+
 
 ## 3. Build an index file from the reference genome with HISat2
 We will be aligning our sequence reads to the reference genome.
@@ -43,8 +50,6 @@ Then with -f option we specify that the input is a fasta file (which can come in
 We then title and create an index which is stored into the output folder. If you don't have an output folder in your working directory already, add one before running the below code.
 
 GTF files typically include information about gene structures, such as the locations of exons, introns, and other features, and are commonly used for genome annotation and RNAseq analysis. 
-
-We can proceed with making an index using HISAT2 without information regarding exons and splice sites with the following code chunk.
 
 
 ```{bash}
@@ -57,7 +62,9 @@ We can proceed with making an index using HISAT2 without information regarding e
 /home/shared/hisat2-2.2.1/hisat2_extract_splice_sites.py \
 ../data/genome-alignment/botznik-chr-all.gff \
 > ../output/botznik-chr-all-splice-sites.tab
+```
 
+```{r, engine='bash'}
 # Build Hisat2 reference index using splice sites and exons
 /home/shared/hisat2-2.2.1/hisat2-build \
 -f ../data/genome-alignment/GCA_000444245.1_356a-chromosome-assembly_genomic.fna \
@@ -150,16 +157,6 @@ rm ./*.sam
 ## 6. Generating a reference transcriptome annotation to input into trinity?
 I can't make abundance estimates until I have gtf it seems. Here is an example of the code chunk that ChatGPT spit out for me. 
 
-"To generate a reference transcriptome annotation in GTF format using StringTie, you can follow these steps:
-
-1. Align RNA-seq reads to the genome assembly: Use a program such as HISAT2 to align RNA-seq reads to the genome assembly. This will produce a sorted BAM file containing the alignment information.
-
-2. Generate a GTF file for genome annotation: Use a program such as MAKER or BRAKER to generate a GTF file for genome annotation. This file should contain the predicted gene models, along with their exon and intron boundaries.
-
-3. Run StringTie to assemble transcripts: Use the sorted BAM file from step 1 and the GTF file from step 2 as input to StringTie. This will assemble the transcripts and produce a GTF file containing the transcript annotations.
-
-Here's an example command for running StringTie:
-
 ```{r, engine='bash'}
  #!/bin/bash
 
@@ -172,7 +169,7 @@ for f in ${input_dir}/*.sorted.bam; do
     # Get base filename
     base=$(basename ${f} .sorted.bam)
 
-    # Run StringTie to estimate transcript abundances
+    # Run StringTie to estimate transcript abundances, botznik gff not accepted as a valid reference transcript... :(
     /home/shared/stringtie-2.2.1.Linux_x86_64/stringtie \
     ${input_dir}/${base}.sorted.bam \
     -G ../data/genome-alignment/botznik-chr-all.gff \
@@ -189,7 +186,6 @@ done
 -p 7
 
 ```
-"
 
 ## 7. Quantifying gene expression levels
 
