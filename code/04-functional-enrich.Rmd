@@ -1,0 +1,23 @@
+---
+title: "Functional Enrichment Analysis"
+output: html_document
+date: "2023-05-04"
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(data.table)
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Setting this to false will allow us to knit the code without evaluating code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
+```
