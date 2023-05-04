@@ -66,46 +66,6 @@ done
 
 ```
 
-
-# Conducting psueo-alignments one query at a time...
-
-### Quant SRR10352205
-```{r, engine = 'bash'}
-/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
--o ../output/kallisto_01/SRR10352205 \
--t 40 \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_2.fastq
-```
-### Quant SRR10352206
-
-```{r, engine = 'bash'}
-/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
--o ../output/kallisto_01/SRR10352206 \
--t 40 \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352206_1.fastq \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352206_2.fastq
-```
-
-### Quant SRR10352224
-
-```{r, engine = 'bash'}
-/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
--o ../output/kallisto_01/SRR10352224 \
--t 40 \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352224_1.fastq \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352224_2.fastq
-```
-
-### Quant SRR10352254
-```{r, engine = 'bash'}
-/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
--o ../output/kallisto_01/SRR10352254 \
--t 40 \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352254_1.fastq \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352254_2.fastq
-```
-
 # Creating gene expression matracies from kallisto output files
 
 This command runs the abundance_estimates_to_matrix.pl script from the Trinity RNA-seq assembly software package to create a gene expression matrix from kallisto output files.
