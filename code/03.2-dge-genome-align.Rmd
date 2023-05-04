@@ -28,10 +28,12 @@ cd ../data
 curl --insecure -O http://botryllus.stanford.edu/botryllusgenome/download/botznik-chr-ctg.gff
 ```
 
-Taking a peak at the annotated genome:
+Taking a peak at all three gff files available from that server:
 ```{bash}
 cd ../data/genome-alignment
-tail -n 70 botznik-chr-all.gff
+tail -n 10 botznik-chr-all.gff
+tail -n 10 botznik-chr-ctg.gff
+tail -n 10 start_stop_transcripts30.gff
 ```
 When running through workflow, particularly at the development of gtf files, it says that this is not a valid reference gff. Below I will curl a different gff from the same server. I tried all the gff's from this server and none of them produce exon and splice site tabs or are convertable into gtf files with string tie.
 
@@ -48,9 +50,6 @@ The below command takes the path to the HISAT2 executable.
 Then with -f option we specify that the input is a fasta file (which can come in the fasta, fna, or fa file extension format).
 
 We then title and create an index which is stored into the output folder. If you don't have an output folder in your working directory already, add one before running the below code.
-
-GTF files typically include information about gene structures, such as the locations of exons, introns, and other features, and are commonly used for genome annotation and RNAseq analysis. 
-
 
 ```{bash}
 # Create Hisat2 exons tab file
@@ -143,14 +142,6 @@ Cleaning up the output directory since those sam files are pretty large and taki
 rm GCA_000444245.1_356a-valid*.ht2
 
 # Delete unneeded SAM files
-rm ./*.sam
-```
-
-
-
-
-```{r, engine = 'bash'}
-rm ./ *.ht2
 rm ./*.sam
 ```
 
