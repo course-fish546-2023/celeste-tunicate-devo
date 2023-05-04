@@ -1,5 +1,5 @@
 ---
-title: "Differential gene expression analysis & PCA using Kallisto"
+title: "Differential gene expression analysis using Kallisto"
 output: md_document
 date: "2023-04-22"
 ---
@@ -22,9 +22,9 @@ knitr::opts_chunk$set(
 ```
 
 # Accessing a reference to produce an index
-Download the 99k mRNA "complete records" for *Botryllus schlosseri* from NCBI as FASTA file and store in data folder. 
+Download the 99k mRNA "complete records" for *Botryllus schlosseri* from NCBI as FASTA file and store in data folder. Note that I did not curl this information but had to manually download it.
 
-Then run the following code chunk which will use the index command in Kallisto to create a reference index of all 99k records. It renames that fasta file you upload to 'bsc_rna.index'.
+Then run the following code chunk which will use the index command in Kallisto to create a reference index of all 99k records. It renames that fasta file you upload to 'bsc_rna.index'. I apologize for the absolute paths used to name my new index and to id where the fasta files is... just replace those as need be.
 
 ```{r, engine = 'bash'}
 /home/shared/kallisto/kallisto \
@@ -33,17 +33,39 @@ index -i \
 /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/sequence.fasta
 ```
 
-Running the following code chunks produces a bunch of errors regarding file pathways. I think I am running into issues because my RNAseq data is in a different hard drive than my current working directory. However, If I simplify the code chunk to ask it for just one of my files (thus skipping the find command). It's possible to run the Kallisto quant command. Eventually, I may come back to this code chunk to troubleshoot.  
-```{r, engine = 'bash'}
-find /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/*_1.fastq \
-| sed 's/_1.fastq$//' \
-| xargs -I{} /home/shared/kallisto/kallisto \
-quant -i /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index \
--o /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/kallisto_01/{} \
--t 40 \
-/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/{}_1.fastq /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/{}_2.fastq
+
+# Psuedo-alginment of all queries in your raw data directory
+
+Below, I am setting an input directory where my raw RNAseq files live and an index_file defining where the index we just created is. I then specify where I want kallisto to store the output files from this alignment (a pre-made folder called kallisto_01 in the output folder). 
+
+I then have a loop that will go through all the paired-end fastq files in the input directory that will use the quant command in kallisto and quantify abundance of transcripts for each pair of fastq files. It takes the base name of the inut file and names the new folder it creates for one query that same base name.
+```{r, engine='bash'}
+#!/bin/bash
+
+# Set input directory and index file
+input_dir=/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/
+index_file=../data/psuedo-alignment/bsc_rna.index
+
+# Set output directory
+output_dir=../output/kallisto_01
+
+# Set number of threads
+threads=10
+
+# Loop through all paired-end fastq files in input directory
+for f in ${input_dir}/*_1.fastq; do
+    # Get base filename
+    base=$(basename ${f} _1.fastq)
+    
+    # Run kallisto to quantify transcripts
+    /home/shared/kallisto/kallisto quant -i ${index_file} \
+    -o ${output_dir}/${base} \
+    -t ${threads} \
+    ${input_dir}/${base}_1.fastq ${input_dir}/${base}_2.fastq
+done
 
 ```
+
 
 # Conducting psueo-alignments one query at a time...
 
