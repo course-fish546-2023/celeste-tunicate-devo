@@ -6,11 +6,13 @@ date: "2023-05-04"
 
 ```{r setup, include=FALSE}
 library(knitr)
+library(biomartr)
+library(clusterProfiler)
 library(tidyverse)
-library(DESeq2)
-library(pheatmap)
-library(RColorBrewer)
-library(data.table)
+library(enrichplot)
+library(biomaRt)  # only use to remove cache bug
+library(tidyverse)
+library(dplyr)
 knitr::opts_chunk$set(
   echo = TRUE,         # Display code chunks
   eval = FALSE,         # Setting this to false will allow us to knit the code without evaluating code chunks
@@ -22,4 +24,26 @@ knitr::opts_chunk$set(
 )
 ```
 
+<<<<<<< HEAD
+=======
+Reading in significantly differentially expressed genes from our DEG analysis.
+```{r}
+diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ")
+diff_genes$gene <- row.names(diff_genes) #adds the gene name into data frame as new column called gene
+rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n instead of the gene name
+diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
+```
+
+### single enrichment analysis
+```{r}
+diff_genes %>% 
+  filter(log2FoldChange > 0) %>% 
+  with(.,quantile(log2FoldChange, c(0.5,0.75,0.9)))
+
+diff_genes %>% 
+  filter(log2FoldChange > quantile(log2FoldChange, c(0.75))) %>% # keeping fold changes above the 75th percentile
+  dplyr::select(gene) %>% 
+  write.table(., file = "diff_genes_for_agrigo.tsv", row.names = FALSE, quote = FALSE)
+```
+>>>>>>> 138a612db8395fded59fe014c96bc6c0537450f2
 
