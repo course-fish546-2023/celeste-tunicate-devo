@@ -21,3 +21,5 @@ knitr::opts_chunk$set(
   fig.align = "center" # Align plots to the center
 )
 ```
+
+
