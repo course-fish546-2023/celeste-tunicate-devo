@@ -55,7 +55,7 @@ curl --insecure -O http://botryllus.stanford.edu/botryllusgenome/download/botzni
 ```
 
 ### Reading in the list of differentially expressed genes:
-Below, we are going to read in the DEGlist.tab we made in the DEG analysis we previously conducted. Below we will clean up the data frame to make a new column with the gene identifiers. Since we used the "complete mRNA records" of Botryllus schlosseri from NCBI to do our psuedo-alignment, the gene identifier column has accession numbers for mRNA reads from NCBI. We will use this column later to annotate what was differentially expressed.
+Below, we are going to read in the DEGlist.tab we made in the DEG analysis we previously conducted. Below we will clean up the data frame to make a new column with the gene identifiers. Since we used the "complete mRNA records" of Botryllus schlosseri from NCBI to do our psuedo-alignment, the gene identifier column has accession numbers for mRNA reads from NCBI. We will use this column later to annotate what was differentially expressed. I am retroactively blasting the transcriptome reference file to get gene names. Once we have an annotated genome, we can use in this analysis
 ```{r}
 
 diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ")
@@ -64,7 +64,9 @@ rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n instead of the
 diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
 ```
 
-reading in the gene annotation file, however, this may not be that useful to us since the information we have regarding the ID of the gene is the accession number of the mRNA entry on NCBI in the DEGlist.tab.
+
+### Brainstorming, code may or may not work below, beware... 
+Reading in the gene annotation file, however, this may not be that useful to us since the information we have regarding the ID of the gene is the accession number of the mRNA entry on NCBI in the DEGlist.tab.
 ```{r}
 # Set the path to the gene annotation file
 anno_file <- "../data/botznik-gene-ann-2.txt"
@@ -80,7 +82,7 @@ anno <- tryCatch(
 
 ```
 `
-Code that will potentially take the accession numbers of our diff_genes df and get gene ontology terms for them.
+Code that will potentially take the accession numbers of our diff_genes df and get gene ontology terms for them. Although, I am blasting the reference transcriptome to get the gene names...
 ```{r}
 # Get the gene names
 gene_list <- diff_genes$rna_access_num
