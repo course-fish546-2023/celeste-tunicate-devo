@@ -4,6 +4,7 @@ output: html_document
 date: "2023-05-04"
 ---
 # Functional Enrichment Overview
+Currently, this portion of the workflow is a work in progress as of 05/09/2023.
 
 Functional enrichment analysis is a valuable tool to interpret the results of differential gene expression analysis by identifying the biological processes, molecular functions, and pathways that are overrepresented among a set of differentially expressed genes. The general steps to do a functional enrichment analysis:
 
