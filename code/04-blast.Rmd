@@ -24,10 +24,10 @@ using the ncbi blast software command makeblastdb to create a blast database fro
 -out /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/blastdb/uniprot_sprot_r2023_01
 ```
 
-Lets look at just one query sequence for now...
+Lets look at the sequence.fata file
 ```{r, engine='bash'}
-head - n 50 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq
+head - n 20 ../data/psuedo-alignment/sequence.fasta
 echo "How many sequences are there?"
-grep -c ">" home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq
+grep -c ">" ../data/psuedo-alignment/sequence.fasta
 ```
 

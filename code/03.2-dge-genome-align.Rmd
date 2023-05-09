@@ -187,7 +187,7 @@ For this we will use the "align_and_estimate_abundance.pl" script included with 
 ```{bash}
 perl /home/shared/trinityrnaseq-v2.12.0/util/align_and_estimate_abundance.pl \
 --transcripts ../data/start_stop_transcripts30.gff \
---seqType sam \
+--seqType bam \
 --left reads_1.fq \
 --right reads_2.fq \
 --est_method RSEM \
