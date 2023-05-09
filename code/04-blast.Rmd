@@ -1,0 +1,33 @@
+---
+title: "blast"
+output: html_document
+date: "2023-05-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Downloading complete uniprot database
+```{r, engine = 'bash'}
+cd ../data
+curl -O https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+mv uniprot_sprot.fasta.gz uniprot_sprot_r2023_01.fasta.gz
+gunzip -k uniprot_sprot_r2023_01.fasta.gz
+ls ../data
+```
+using the ncbi blast software command makeblastdb to create a blast database from the uinprot fasta file.
+```{r, engine='bash'}
+/home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
+-in /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/uniprot_sprot_r2023_01.fasta \
+-dbtype prot \
+-out /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/blastdb/uniprot_sprot_r2023_01
+```
+
+Lets look at just one query sequence for now...
+```{r, engine='bash'}
+head - n 50 /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq
+echo "How many sequences are there?"
+grep -c ">" home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq
+```
+
