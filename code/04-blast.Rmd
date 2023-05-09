@@ -1,11 +1,19 @@
 ---
 title: "blast"
-output: html_document
+output: md_document
 date: "2023-05-09"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Setting this to false will allow us to knit the code without evaluating code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
 ```
 
 Downloading complete uniprot database
