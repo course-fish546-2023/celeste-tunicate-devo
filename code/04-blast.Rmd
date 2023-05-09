@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-Downloading complete uniprot database
+Downloading complete uniprot database.
 ```{r, engine = 'bash'}
 cd ../data
 curl -O https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
@@ -24,7 +24,8 @@ mv uniprot_sprot.fasta.gz uniprot_sprot_r2023_01.fasta.gz
 gunzip -k uniprot_sprot_r2023_01.fasta.gz
 ls ../data
 ```
-using the ncbi blast software command makeblastdb to create a blast database from the uinprot fasta file.
+
+Using the NCBI blast software command 'makeblastdb' to create a blast database from the uniprot fasta file.
 ```{r, engine='bash'}
 /home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
 -in /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/uniprot_sprot_r2023_01.fasta \
@@ -32,10 +33,28 @@ using the ncbi blast software command makeblastdb to create a blast database fro
 -out /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/blastdb/uniprot_sprot_r2023_01
 ```
 
-Lets look at the sequence.fata file
+Lets look at what's in the sequence.fata file before we BLAST it.
 ```{r, engine='bash'}
 head - n 20 ../data/psuedo-alignment/sequence.fasta
 echo "How many sequences are there?"
 grep -c ">" ../data/psuedo-alignment/sequence.fasta
+```
+
+Blasting the reference transcriptome:
+```{r, engine='bash'}
+/home/shared/ncbi-blast-2.11.0+/bin/blastx \
+-query ../data/sequence.fasta \
+-db ../output/blastdb/uniprot_sprot_r2023_01 \
+-out ../output/Bsc-uniprot_blastx.tab \
+-evalue 1E-20 \
+-num_threads 20 \
+-max_target_seqs 1 \
+-outfmt 6
+```
+
+Lets take a little peak at the tab file we just created:
+```{r, engine='bash'}
+head -2 ../output/Bsc-uniprot_blastx.tab
+wc -l ../output/Bsc-uniprot_blastx.tab
 ```
 
