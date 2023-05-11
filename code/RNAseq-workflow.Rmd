@@ -362,3 +362,24 @@ left_join(bltabl, spgo,  by = c("V3" = "Entry")) %>%
   write_delim("../output/blast_annot_go.tab", delim = '\t')
 
 ```
+
+Let's look at the first three lines of our annotated reference transcriptome. It now contains the original gene ID and Gene Ontology (GO) terms that will help us understand our DEGlist from our differential gene expression analysis. 
+```{r, engine ='bash', eval = TRUE}
+cd ../output
+head -n 3 blast_annot_go.tab
+```
+
+# Merging the annotated table with our DEGlist
+If you take a look at the DEGlist.tab, you will see that the row names themselves are the gene ID's. This contrasts with the blast GO anotated table that has a whole column (V1) dedicated to the gene ID in the same format. Thus, we first need to take the row names of the DEGlist.tab and make them into a new column. It was originally in it's own column but we needed to convert it so that it could go through the DESeq workflow.
+```{r, engine='bash'}
+cd ../output
+head -n 3 DEGlist.tab
+```
+```{r, eval=TRUE}
+diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ", header = TRUE)
+diff_genes$rna_access_num <- row.names(diff_genes) #adds the gene name into data frame as new column called gene
+rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n instead of the gene name
+diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
+head(diff_genes)
+```
+Now that we have the DEG list read in with a column 
