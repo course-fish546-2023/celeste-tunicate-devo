@@ -1,0 +1,102 @@
+---
+title: "RNAseq Project Compendium"
+author: "Celeste Valdivia"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    theme: cosmo
+    highlight: textmate
+    toc: true
+    toc_float: true
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(data.table)
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Evaluate code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
+```
+
+# Project Summary
+I have conducted a small scale replication of the transcriptomic BioProject [PRJNA579844](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA579844) which has 90 RNAseq run files itself.
+
+Briefly, colonial marine tunicates like *Botryllus schlosseri* are capable of both sexually reproducing through a single fertilized egg (embryogenesis) and through asexual reproduction where new generations are derived from somatic cells of the parental body (blastogenesis). In healthy *Botryllus schlosseri*, blastogenesis occurs as a weekly synchronized process. Transcriptomic data available from this project isolated RNA across several developmental stages of *Botryllus schlosseri* from the whole body.
+
+Within this project I will evaluate the whole transcriptome of an the early blastogenic stage b5 to b6 in the secondary bud and the late takeover (TO) blastogenic stage in the adult zooid. Below is a schematic that helps visualize these two stages:
+
+![image](https://github.com/valeste/valeste.github.io/blob/master/assets/img/sex_asex_devo_TO_b5.jpeg?raw=true)
+
+
+# Metadata for the four runs evalutated
+
+|     Run     |    Bases    | BioProject  |   Bytes    | dev_stage  |       Organism        | Platform  |    Tissue    |
+|-------------|-------------|-------------|------------|------------|-----------------------|-----------|--------------|
+| SRR10352205 | 10576501436 | PRJNA579844 | 6996363570 | b5-b6      |  Botryllus schlosseri | ILLUMINA  | whole system |
+| SRR10352206 | 3609019200  | PRJNA579844 | 1836994542 | b5-b6      |  Botryllus schlosseri | ILLUMINA  | whole system |
+| SRR10352224 | 4847587800  | PRJNA579844 | 2533047747 | TO         |  Botryllus schlosseri | ILLUMINA  | whole system |
+| SRR10352254 | 5482368900  | PRJNA579844 | 2984116333 | TO         |  Botryllus schlosseri | ILLUMINA  | whole system |
+
+
+# Accessing Data
+1. Go to the  NCBI page for BioProject [PRJNA579844](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA579844) and select the numeric value next to "SRA Experiments" which indicates the number of runs in this project. 
+2. On the top right corener select "Send to" and from the drop down menu select "Run Selector.
+3.  Run selector will show you all the runs available for the BioProject of interest with all the metadata. You can download metadata or accession list (SRR numbers) to keep track of your runs of interest. 
+
+## Identify where you will store your raw data
+Below we move to a large hard drive and make a new directory where we will store our data.
+```{r, engine='bash', eval = FALSE}
+# move to a large hard drive
+cd /home/shared/8TB_HDD_01
+
+# making a new directory 
+mkdir cvaldi/tunicate-fish546/raw
+```
+
+## Downloading the RNAseq run files
+Since we are downloading data from NCBI, we will use NCBI's SRA Toolkit to do so. Below we bypass the prefetch command and use the fasterq-dump command directlry. Skipping the prefetch command just makes the downloading time longer. We specify the directory we want the raw data files stored in the '--outdir' subcommand. 
+```{r, engine = 'bash'}
+/home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
+--outdir /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw \
+--progress \
+SRR10352205 \
+SRR10352206 \
+SRR10352224 \
+SRR10352254
+```
+
+## Gereate checksums
+We will make checksums for all the raw fastq files using the '*' wildcard. This will help us evaluate data integrity downstream.
+```{r, engine = 'bash'}
+cd raw
+md5sum *.fastq > md5.original.download.20230413
+```
+The following code chunk will show us the checksums in the new md5 file we made. 
+```{r, engine ='bash'}
+cat md5.original.download.20230413
+```
+
+# Quality Control and Quality Assessment of Raw RNAseq Riles
+
+Below, we run the fastqc software on all the fastq files in the raw directory. FastQC will produce html reports of the quality of the raw RNAseq data. We can use this information to trim the data, but we can loop back to this after conducting the initial exploratory flow.
+```{r, engine='bash'}
+cd ../raw
+/home/shared/FastQC/fastqc *.fastq
+```
+
+# Differential Gene Expression Analysis 
+For *Botrylus schlosseri* currently have several bioinformatic data files available for download on Standrofds Private [*Botryllus schlosseri* Genome Project Server](http://botryllus.stanford.edu/botryllusgenome/download/). To do any differential gene expres
+
+## Accessing a reference transcriptome
+1. 

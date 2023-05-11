@@ -3,7 +3,6 @@ title: "QA/QC"
 output: md_document
 date: "2023-04-14"
 ---
-File 2 of 3.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE, warning = FALSE, message = FALSE)
@@ -14,7 +13,6 @@ Below I specify where the FastQC software is at and then run the command fastqc 
 ```{r, engine='bash'}
 cd ../raw
 /home/shared/FastQC/fastqc *.fastq
-
 ```
 
 To open the html files run. Currently, this does not work so ask someone or troubleshoot later.

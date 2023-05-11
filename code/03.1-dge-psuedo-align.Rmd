@@ -38,7 +38,7 @@ index -i \
 
 Below, I am setting an input directory where my raw RNAseq files live and an index_file defining where the index we just created is. I then specify where I want kallisto to store the output files from this alignment (a pre-made folder called kallisto_01 in the output folder). 
 
-I then have a loop that will go through all the paired-end fastq files in the input directory that will use the quant command in kallisto and quantify abundance of transcripts for each pair of fastq files. It takes the base name of the inut file and names the new folder it creates for one query that same base name.
+I then have a loop that will go through all the paired-end fastq files in the input directory that will use the quant command in kallisto and quantify abundance of transcripts for each pair of fastq files. It takes the base name of the input file and names the new folder it creates for one query that same base name.
 ```{r, engine='bash'}
 #!/bin/bash
 
