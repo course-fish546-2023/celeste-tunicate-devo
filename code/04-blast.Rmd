@@ -26,9 +26,9 @@ knitr::opts_chunk$set(
 )
 ```
 -----------------
-
-Downloading complete uniprot database.
-```{r, engine = 'bash'}
+## Downloading complete UniProt database.
+UniProt is a freely accessible database of protein sequence and functional information that is continuously updated every 8 weeks. 
+```{r uniprot data download, engine = 'bash'}
 cd ../data
 curl -O https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
 mv uniprot_sprot.fasta.gz uniprot_sprot_r2023_01.fasta.gz
@@ -36,24 +36,26 @@ gunzip -k uniprot_sprot_r2023_01.fasta.gz
 ls ../data
 ```
 
-Using the NCBI blast software command 'makeblastdb' to create a blast database from the uniprot fasta file.
-```{r, engine='bash'}
+## Making a BLAST database
+Using the NCBI blast software command 'makeblastdb' to create a blast database from the UniProt fasta file.
+```{r generate blast database, engine='bash'}
 /home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
 -in /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/uniprot_sprot_r2023_01.fasta \
 -dbtype prot \
 -out /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/blastdb/uniprot_sprot_r2023_01
 ```
 
-Lets look at what's in the sequence.fata file before we BLAST it.
-```{r, engine='bash'}
+## Blasting the reference transcriptome
+Lets look at what's in the sequence.fasta file before we BLAST it.
+```{r evaluate reference for content, engine='bash'}
 cd data/psuedo-alignment
 head sequence.fasta
 echo "How many sequences are there?"
 grep -c ">" sequence.fasta
 ```
 
-Blasting the reference transcriptome:
-```{r, engine='bash'}
+Here we use the blastx command to BLAST the reference transcriptome and make a new table that includes the estimated protein ID associated with the gene ID in our original reference transcriptome.
+```{r blast reference, engine='bash'}
 /home/shared/ncbi-blast-2.11.0+/bin/blastx \
 -query /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/psuedo-alignment/sequence.fasta \
 -db /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/output/blastdb/uniprot_sprot_r2023_01 \
@@ -65,19 +67,21 @@ Blasting the reference transcriptome:
 ```
 
 Lets take a little peak at the tab file we just created:
-```{r, engine='bash'}
+```{r evaluate blast output contents, engine='bash'}
 head -5 ../output/Bsc-uniprot_blastx.tab
 wc -l ../output/Bsc-uniprot_blastx.tab
 ```
 
 Curl file from UniProt that contains protein data in a specified format (accession number, reviewed status, ID, protein name, gene names, organism name, length, GO function, GO, process, GO component, GO ID, interacting partners, EC number, Reactome pathway, UniPathway, and InterPro cross-references. This can be then used to 
 
-```{bash}
+```{r read in uniprot tab, engine='bash'}
+#this may not work, pulled uniprot tab from other source (gannet server)
 cd ../data
 curl -O -H "Accept: text/plain; format=tsv" "https://rest.uniprot.org/uniprotkb/stream?compressed=true&fields=accession%2Creviewed%2Cid%2Cprotein_name%2Cgene_names%2Corganism_name%2Clength%2Cgo_f%2Cgo%2Cgo_p%2Cgo_c%2Cgo_id%2Ccc_interaction%2Cec%2Cxref_reactome%2Cxref_unipathway%2Cxref_interpro&format=tsv&query=%28%2A%29%20AND%20%28reviewed%3Atrue%29"
 ```
 
-```{r, engine = 'bash'}
+Below, we are going to clean up the tab file we created to seperate out the information regarding the estimated protein sequence.
+```{r cleanup blast output, engine = 'bash'}
 tr '|' '\t' < ../output/Bsc-uniprot_blastx.tab | head -2
 
 # replace the "|" with "\t" in the file "Ab_4-uniprot_blastx.tab"
@@ -91,14 +95,16 @@ head -2 ../output/Bsc-uniprot_blastx_sep.tab
 wc -l ../output/Bsc-uniprot_blastx_sep.tab
 ```
 
-Now we will merge our two tables:
-```{r}
+## Merging the two tables
+First read in the blast table
+```{r read in blast output}
 # reading into r environ the blast table we created
 bltabl <- read.csv("../output/Bsc-uniprot_blastx_sep.tab", sep = '\t', header = FALSE)
 
 ```
 
-```{r}
+Then we are going to grab the UniProt table that is stored on Gannet.
+```{r read in uniprot table}
 #reading in annotation table from Gannet and saving as object....
 library(httr)
 url <- "https://gannet.fish.washington.edu/seashell/snaps/uniprot_table_r2023_01.tab"
@@ -106,11 +112,50 @@ response <- GET(url, config(ssl_verifypeer = FALSE))
 spgo <- read.csv(text = rawToChar(response$content), sep = "\t", header = TRUE)
 ```
 
-Joining the two tables:
-```{r}
+Joining the two tables and saving this in our output directory as our blast annotated GO table called "blast_annot_go.tab".
+```{r join uniprot table and blast table}
 left_join(bltabl, spgo,  by = c("V3" = "Entry")) %>%
-  select(V1, V3, V13, Protein.names, Organism, Gene.Ontology..biological.process., Gene.Ontology.IDs) %>% mutate(V1 = str_replace_all(V1, 
+  select(V1, V3, V13, Protein.names, Organism, Gene.Ontology..biological.process., Gene.Ontology.IDs) %>% 
+  mutate(V1 = str_replace_all(V1, 
             pattern = "solid0078_20110412_FRAG_BC_WHITE_WHITE_F3_QV_SE_trimmed", replacement = "Ab")) %>%
   write_delim("../output/blast_annot_go.tab", delim = '\t')
 
 ```
+
+Let's look at the first three lines of our annotated reference transcriptome. It now contains the original gene ID and Gene Ontology (GO) terms that will help us understand our DEGlist from our differential gene expression analysis. 
+```{r view blast annotated go table, engine ='bash', eval = TRUE}
+cd ../output
+head -n 3 blast_annot_go.tab
+```
+
+
+# Merging the annotated table with our DEGlist
+If you take a look at the DEGlist.tab, you will see that the row names themselves are the gene ID's. This contrasts with the blast GO anotated table that has a whole column (V1) dedicated to the gene ID in the same format. Thus, we first need to take the row names of the DEGlist.tab and make them into a new column. It was originally in it's own column but we needed to convert it so that it could go through the DESeq workflow.
+```{r evaluate DEGlist content, engine='bash'}
+cd ../output
+head -n 3 DEGlist.tab
+```
+
+```{r clean up DEGlist, eval=TRUE}
+diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ", header = TRUE)
+diff_genes$access_num <- row.names(diff_genes) #adds the gene name into data frame as new column called gene
+rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n instead of the gene name
+diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
+head(diff_genes)
+```
+Next we will read in the blast annotate GO terms table that we made above as an object into our R environment
+```{r read in blast annotated go table, eval=TRUE}
+blast_go <- read.delim(file = "../output/blast_annot_go.tab")
+colnames(blast_go)[1] <- 'access_num' #renaming the first column so it has the same name as the diff_genes data frame above
+head(blast_go)
+```
+
+now we can merge the two tables together based on the shared column.
+```{r}
+# Perform inner join between diff_genes and blast_go data frames based on shared "access_num" column
+merged_table <- merge(diff_genes, blast_go, by = "access_num", all = FALSE)
+
+# Print the merged table
+head(merged_table)
+```
+
