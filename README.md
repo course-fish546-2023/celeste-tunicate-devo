@@ -1,8 +1,7 @@
-# celeste-tunicate-cells
+# celeste-tunicate-devo
 
-### Week 05 Presentation of Workflow Update
+## [Project Compendium](https://rpubs.com/cvaldi/1040648)
 
-https://rpubs.com/cvaldi/1034395
 
 ### Objectives
 The final objectives of this bioinformatics project is to conduct a differential gene expression analysis of transcriptomic data from two distinct blastogenic stages in the marine model tunicate *Botryllus schlosseri*. This will then be followed up with a functional enrichment analysis to extract biological meaning from significantly differently expressed genes.
