@@ -387,13 +387,16 @@ blast_go <- read.delim(file = "../output/blast_annot_go.tab")
 colnames(blast_go)[1] <- 'access_num' #renaming the first column so it has the same name as the diff_genes data frame above
 ```
 
-
-Now that we have the DEG list read in with a column 
+Now that we have both the blast go and differential gene list in the right format, we can merge the two so that we have information regarding gene ID and function paired with differentially expressed genes.
 ```{r, eval=TRUE}
 # Perform inner join between diff_genes and blast_go data frames based on shared "access_num" column
 annote_DEGlist <- merge(diff_genes, blast_go, by = "access_num", all = FALSE)
 
 # Print the merged table
 head(annote_DEGlist)
+```
+Finally, let's write out the annotated DEG list to save it to our output directory.
+```{r}
+write.table(annote_DEGlist, "../output/annote_DEGlist.tab", row.names = T)
 ```
 
