@@ -1,6 +1,6 @@
 # celeste-tunicate-devo
 
-## [Project Compendium](https://rpubs.com/cvaldi/1040648)
+### View [Project Compendium](https://rpubs.com/cvaldi/1040648) page to see whole workflow in one place!
 
 
 ### Objectives
