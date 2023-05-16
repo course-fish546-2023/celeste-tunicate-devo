@@ -1,0 +1,124 @@
+---
+title: "cleaning-up"
+author: "Celeste Valdivia"
+date: "2023-05-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(data.table)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Reading in the DESeq results agian
+
+We need to read in the count matrix
+```{r}
+countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t')
+rownames(countmatrix) <- countmatrix$X #this line renames the row names from 1-n to the value of the first column called x (gene ID's)
+countmatrix <- countmatrix[,-1] #this gets rid of the first column with the gene ID's
+countmatrix <- round(countmatrix, 0) #rounds values in count matrix
+head(countmatrix)
+```
+
+
+```{r}
+deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
+                             type=factor(rep("paired-end", 4)))
+rownames(deseq2.colData) <- colnames(data) #not sure what the purpose of this line is, it doesn't seem to do anything
+deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
+                                     colData = deseq2.colData, 
+                                     design = ~ condition)
+```
+
+```{r}
+deseq2.dds <- DESeq(deseq2.dds) #takes the DESeq data set we created and conducts a DESeq analysis
+deseq2.res <- results(deseq2.dds) #here we take a look at the results of the analysis
+deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ]
+head(deseq2.res)
+```
+
+#Tidy heatmap
+Original:
+```{r}
+# Select top 50 differentially expressed genes
+deseq2.res <- results(deseq2.dds)
+res_ordered <- deseq2.res[order(deseq2.res$padj), ]
+top_genes <- row.names(res_ordered)[1:50]
+
+# Extract counts and normalize
+counts <- counts(deseq2.dds, normalized = TRUE)
+counts_top <- counts[top_genes, ]
+
+# Log-transform counts
+log_counts_top <- log2(counts_top + 1)
+
+# Generate heatmap
+pheatmap(log_counts_top, scale = "row")
+```
+
+# modified
+## make a list of top genes differentially expressed
+```{r}
+# Get gene names
+ # Select top 50 differentially expressed genes
+deseq2.res <- results(deseq2.dds)
+res_ordered <- deseq2.res[order(deseq2.res$padj), ]
+top_genes <- row.names(res_ordered)[1:50] # here we are just going to make a list of the top de genes that we will apply later one
+```
+
+## make a counts data frame to feed into merge() fxn
+```{r}
+
+# Extract counts and normalizes them and then we put it all in a data frame so that it can
+counts <- counts(deseq2.dds, normalized = TRUE)
+countsdf <- as.data.frame(counts)
+countsdf$access_num <- row.names(countsdf) #new column
+rownames(countsdf) <- countsdf$X #renames all the rows to 1-n instead of the gene name, note you MUST MAKE THE ROW NAMES NUMBERS in order to merge two tables
+countsdf <- countsdf[ , c(5, 1:4)] #puts accession col in front
+```
+
+## read in blast annotated table
+```{r}
+# read in blast annotated go table
+blast_go <- read.delim(file = "../output/blast_annot_go.tab")
+colnames(blast_go)[1] <- 'access_num' #renaming the first column so it has the same name as the diff_genes data frame above
+
+```
+
+## merge blast df and count df 
+```{r}
+
+#merge the blast table and counts table together
+counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) #won't work unless they are both data frames
+counts_pro <- counts_pro[, c(2:5,8)]
+```
+## Eliminate replicate protein rows through merging
+```{r}
+
+```
+
+
+```{r}
+# widdle down the counts to top genes
+counts_top <- counts[top_genes, ]
+counts_top_df <- as.data.frame(counts_top)
+counts_top_df$access_num <- row.names(counts_top_df) #adds the gene name into data frame as new column called gene
+
+
+```
+
+```{r}
+# Log-transform counts
+log_counts_top <- log2(counts_top_pro[,2:5] + 1)
+
+# Generate heatmap
+pheatmap(log_counts_top, scale = "row")
+
+```
+
