@@ -44,3 +44,6 @@ kallisto*
 *bam
 *bam.bai
 *.txt
+*.fasta
+*.fasta.gz
+blastdb
