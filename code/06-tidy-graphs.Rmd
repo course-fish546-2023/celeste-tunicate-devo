@@ -79,7 +79,6 @@ top_genes <- row.names(res_ordered)[1:50] # here we are just going to make a lis
 counts <- counts(deseq2.dds, normalized = TRUE)
 countsdf <- as.data.frame(counts)
 countsdf$access_num <- row.names(countsdf) #new column
-rownames(countsdf) <- countsdf$X #renames all the rows to 1-n instead of the gene name, note you MUST MAKE THE ROW NAMES NUMBERS in order to merge two tables
 countsdf <- countsdf[ , c(5, 1:4)] #puts accession col in front
 ```
 
@@ -96,7 +95,12 @@ colnames(blast_go)[1] <- 'access_num' #renaming the first column so it has the s
 
 #merge the blast table and counts table together
 counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) #won't work unless they are both data frames
-counts_pro <- counts_pro[, c(2:5,8)]
+#eliminate duplicate access num
+counts_pro_unico <- distinct(counts_pro)
+
+counts_pro_unico[duplicated(counts_pro_unico)]
+
+rownames(counts_pro_unico) <- counts_pro_unico$access_num 
 ```
 ## Eliminate replicate protein rows through merging
 ```{r}
@@ -106,10 +110,9 @@ counts_pro <- counts_pro[, c(2:5,8)]
 
 ```{r}
 # widdle down the counts to top genes
-counts_top <- counts[top_genes, ]
+counts_top <- counts_pro[top_genes, ]
 counts_top_df <- as.data.frame(counts_top)
 counts_top_df$access_num <- row.names(counts_top_df) #adds the gene name into data frame as new column called gene
-
 
 ```
 
