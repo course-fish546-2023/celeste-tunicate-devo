@@ -15,113 +15,143 @@ library(data.table)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Reading in the DESeq results agian
 
-We need to read in the count matrix
-```{r}
-countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t')
-rownames(countmatrix) <- countmatrix$X #this line renames the row names from 1-n to the value of the first column called x (gene ID's)
-countmatrix <- countmatrix[,-1] #this gets rid of the first column with the gene ID's
-countmatrix <- round(countmatrix, 0) #rounds values in count matrix
-head(countmatrix)
-```
+# Wrangling Annotated DEG Data
 
+Make a vector of the top 100 differentially expressed genes:
+```{r, eval=TRUE, cache=TRUE}
 
-```{r}
-deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
-                             type=factor(rep("paired-end", 4)))
-rownames(deseq2.colData) <- colnames(data) #not sure what the purpose of this line is, it doesn't seem to do anything
-deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
-                                     colData = deseq2.colData, 
-                                     design = ~ condition)
-```
-
-```{r}
-deseq2.dds <- DESeq(deseq2.dds) #takes the DESeq data set we created and conducts a DESeq analysis
-deseq2.res <- results(deseq2.dds) #here we take a look at the results of the analysis
-deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ]
-head(deseq2.res)
-```
-
-#Tidy heatmap
-Original:
-```{r}
-# Select top 50 differentially expressed genes
+# Select top 100 differentially expressed genes
 deseq2.res <- results(deseq2.dds)
 res_ordered <- deseq2.res[order(deseq2.res$padj), ]
-top_genes <- row.names(res_ordered)[1:50]
-
-# Extract counts and normalize
-counts <- counts(deseq2.dds, normalized = TRUE)
-counts_top <- counts[top_genes, ]
-
-# Log-transform counts
-log_counts_top <- log2(counts_top + 1)
-
-# Generate heatmap
-pheatmap(log_counts_top, scale = "row")
+#create object that we will reference later
+top_genes <- row.names(res_ordered)[1:100] 
 ```
-
-# modified
-## make a list of top genes differentially expressed
-```{r}
-# Get gene names
- # Select top 50 differentially expressed genes
-deseq2.res <- results(deseq2.dds)
-res_ordered <- deseq2.res[order(deseq2.res$padj), ]
-top_genes <- row.names(res_ordered)[1:50] # here we are just going to make a list of the top de genes that we will apply later one
-```
-
-## make a counts data frame to feed into merge() fxn
-```{r}
-
-# Extract counts and normalizes them and then we put it all in a data frame so that it can
+Next in order to merge the annotated blast table with the counts data we will need to transform the counts matrix into a data frame so that we can use the merge() function.
+```{r, eval=TRUE, cache=TRUE}
+#extract counts and normalizes them and then we put it all in a data frame so that it can
 counts <- counts(deseq2.dds, normalized = TRUE)
 countsdf <- as.data.frame(counts)
 countsdf$access_num <- row.names(countsdf) #new column
 countsdf <- countsdf[ , c(5, 1:4)] #puts accession col in front
 ```
 
-## read in blast annotated table
-```{r}
-# read in blast annotated go table
+Read in blast annotated table:
+```{r, eval=TRUE, cache=TRUE}
 blast_go <- read.delim(file = "../output/blast_annot_go.tab")
-colnames(blast_go)[1] <- 'access_num' #renaming the first column so it has the same name as the diff_genes data frame above
-
+#renaming the first column so it has the same name for merging
+colnames(blast_go)[1] <- 'access_num' 
 ```
 
-## merge blast df and count df 
-```{r}
-
+Merge blast data frame and count data frame by an inner join so that we can just label genes that exist in the countsdf data frame. Note that there will be duplicate protein entries in this new merged data frame that got annotated the same in BLASTing. This is normal and so we are just going to get rid duplicates so that we are actually able to visualize whats going on.
+```{r, eval=TRUE, cache=TRUE}
 #merge the blast table and counts table together
 counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) #won't work unless they are both data frames
-#eliminate duplicate access num
+
+#checking if there any duplicates
+head(which(duplicated(counts_pro))) 
+
+#eliminate duplicate accession numbers
 counts_pro_unico <- distinct(counts_pro)
 
-counts_pro_unico[duplicated(counts_pro_unico)]
+#checking if there are any duplicates still, should be 0
+head(which(duplicated(counts_pro_unico))) 
 
-rownames(counts_pro_unico) <- counts_pro_unico$access_num 
-```
-## Eliminate replicate protein rows through merging
-```{r}
+counts_matrix_unico <- as.matrix(counts_pro_unico) #make this a matrix again so it can take the rownames()
 
-```
+access_num_unico <- counts_matrix_unico[,1] #making a vector of names that I want to assign to the new matrix
 
-
-```{r}
-# widdle down the counts to top genes
-counts_top <- counts_pro[top_genes, ]
-counts_top_df <- as.data.frame(counts_top)
-counts_top_df$access_num <- row.names(counts_top_df) #adds the gene name into data frame as new column called gene
-
+rownames(counts_matrix_unico) <- access_num_unico #rename all rows the access_num
 ```
 
-```{r}
-# Log-transform counts
-log_counts_top <- log2(counts_top_pro[,2:5] + 1)
+We needed to name the rows the accession number since we will be using this to pull out the top differentially expressed genes that we named in the 
 
-# Generate heatmap
-pheatmap(log_counts_top, scale = "row")
+
+```{r, eval=TRUE, cache=TRUE}
+# Identify top genes that are present in the counts_matrix_unico row names
+present_genes <- intersect(top_genes, row.names(counts_matrix_unico))
+
+# Extract the rows corresponding to the present genes
+counts_top <- counts_matrix_unico[present_genes, ]
+
+head(counts_top) #lets take a peak!
+
+nrow(counts_top) #how many top DEGs are we going to graph?
+```
+
+enaming rows as protein names so that the axis has them
+```{r, eval=TRUE, cache=TRUE}
+counts_top_pro <- counts_top[, c(2:5, 9)]
+rownames(counts_top_pro) <- counts_top_pro[,"Protein.names"]
+counts_top_pro <- counts_top_pro[ ,-5]
+counts_top_pro <- as.matrix(counts_top_pro)
+```
+
+
+Next we have to do a log transformation of the counts but this first means making a new matrix that takes the contents of the previous one (charcter values) and converts them into numeric values to apply the arithmetic function of log2().
+```{r getting log counts, eval=TRUE, cache=TRUE}
+#convert the counts into numbers from characters into new matrix and renaming the col and row names of that new matrix
+counts_top_pro2 <- matrix(as.numeric(counts_top_pro),
+                          ncol = ncol(counts_top_pro))
+colnames(counts_top_pro2) <- colnames(counts_top_pro)
+protein_names <- rownames(counts_top_pro)
+
+#scrub up protein names list so that each entry is not as long by removing things that are contained in parenthesis and brackets (i.e. additional but unnecessary protein name info).
+protein_names2 <- protein_names %>%
+  sub(' \\([^)]+\\).*$', '', .) %>%
+  sub('\\[.*?\\]', ' ', .)
+
+rownames(counts_top_pro2) <- protein_names2
 
 ```
 
+
+```{r, eval=TRUE, cache=TRUE}
+# Perform log transformation
+log_counts_top2 <- log2(counts_top_pro2 + 1)
+```
+
+Now that we have a log counts object we can use it to start generating better looking plots:
+
+```{r base Rcolorbrewer,  eval=TRUE, cache=TRUE}
+#define some color palettes to play with from RColorBrewer
+pink <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
+blue <- colorRampPalette(brewer.pal(8, "Blues"))(25)
+```
+
+Note that the x-axis will be re-ordered in this heat map when the functions calculates the dendrogram for the columns.
+```{r base r heatmaps, eval=TRUE, cache=TRUE}
+# generating different plots with different colors/labels
+heatmap(log_counts_top2, 
+        scale="column", 
+        col = blue, 
+        cexCol = 0.8,
+        margins = c(10,20),
+        xlab = "Sample",
+        ylab = "Protein Name")
+
+```
+
+
+```{r playing with other heatmap.2 function, eval=TRUE, cache=TRUE}
+# Customize the heatmap using heatmap.2
+heatmap.2(log_counts_top2,
+          scale="column",
+          cexRow=0.9,
+          margins =c(10,20),
+          col=pink,
+          Colv = FALSE,              #Keeps x-axis from being reordered but will not then give a dendrogram for samples
+          ylab = "Protien Names",    #y-axis label
+          xlab = "Sample Run ID",    #x-axis label
+          key=TRUE,                  # Add a legend
+          keysize = 0.7,             # Set the size of the legend
+          key.title = "Log Counts",  # Legend title
+          key.xlab = "Expression",   # Legend x-axis label
+          key.ylab = "Frequency",    # Legend y-axis label
+          trace="none",              # Remove the trace lines
+          cexCol = 1)                # Adjust column label font size
+
+
+```
+
+I think I want to come back to this and make heat maps based off conditions not based only on run. However, you will notice that the two samples at the TO stage are looking similar in terms of differential expression but the two samples from the b5-b6 stage are pretty different from one another. I do think this just has to do with sequencing depth as one was sequenced using HISeq.
