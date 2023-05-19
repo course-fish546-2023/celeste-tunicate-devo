@@ -14,17 +14,20 @@ output:
 ```{r setup, include=FALSE}
 library(knitr)
 library(tidyverse)
+library(httr)
 library(DESeq2)
 library(pheatmap)
 library(RColorBrewer)
 library(data.table)
 library(kableExtra)
+library(gplots)
+library(EnhancedVolcano)
 knitr::opts_chunk$set(
   echo = TRUE,         # Display code chunks
   eval = FALSE,         # Evaluate code chunks
   warning = FALSE,     # Hide warnings
   message = FALSE,     # Hide messages
-  fig.width = 13,       # Set plot width in inches
+  fig.width = 12,       # Set plot width in inches
   fig.height = 13,      # Set plot height in inches
   fig.align = "center" # Align plots to the center
 )
@@ -317,6 +320,9 @@ tr '|' '\t' < ../output/Bsc-uniprot_blastx.tab | head -2
 tr '|' '\t' < ../output/Bsc-uniprot_blastx.tab \
 > ../output/Bsc-uniprot_blastx_sep.tab
 
+```
+
+```{r, engine='bash', eval=TRUE, cache=TRUE}
 # peaking at the output file earlier on
 head -2 ../output/Bsc-uniprot_blastx_sep.tab
 wc -l ../output/Bsc-uniprot_blastx_sep.tab
@@ -332,7 +338,6 @@ bltabl <- read.csv("../output/Bsc-uniprot_blastx_sep.tab", sep = '\t', header = 
 Then we are going to grab the UniProt table that is stored on Gannet.
 ```{r read in uniprot table}
 #reading in annotation table from Gannet and saving as object....
-library(httr)
 url <- "https://gannet.fish.washington.edu/seashell/snaps/uniprot_table_r2023_01.tab"
 response <- GET(url, config(ssl_verifypeer = FALSE))
 spgo <- read.csv(text = rawToChar(response$content), sep = "\t", header = TRUE)
@@ -341,7 +346,7 @@ spgo <- read.csv(text = rawToChar(response$content), sep = "\t", header = TRUE)
 Joining the two tables and saving this in our output directory as our blast annotated GO table called "blast_annot_go.tab".
 ```{r join uniprot table and blast table}
 left_join(bltabl, spgo,  by = c("V3" = "Entry")) %>%
-  select(V1, V3, V13, Protein.names, Organism, Gene.Ontology..biological.process., Gene.Ontology.IDs) %>% 
+  select(V1, V3, V4, V13, Protein.names, Organism, Gene.Ontology..biological.process., Gene.Ontology.IDs) %>% 
   mutate(V1 = str_replace_all(V1, 
             pattern = "solid0078_20110412_FRAG_BC_WHITE_WHITE_F3_QV_SE_trimmed", replacement = "Ab")) %>%
   write_delim("../output/blast_annot_go.tab", delim = '\t')
@@ -412,7 +417,7 @@ blast_go <- read.delim(file = "../output/blast_annot_go.tab")
 colnames(blast_go)[1] <- 'access_num' 
 ```
 
-Merge blast data frame and count data frame by an inner join so that we can just label genes that exist in the countsdf data frame. Note that there will be duplicate protein entries in this new merged data frame that got annotated the same in BLASTing. This is normal and so we are just going to get rid duplicates so that we are acutlaly able to visualize whats going on.
+Merge blast data frame and count data frame by an inner join so that we can just label genes that exist in the countsdf data frame. Note that there will be duplicate protein entries in this new merged data frame that got annotated the same in BLASTing. This is normal and so we are just going to get rid duplicates so that we are actually able to visualize whats going on.
 ```{r, eval=TRUE, cache=TRUE}
 #merge the blast table and counts table together
 counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) #won't work unless they are both data frames
@@ -433,7 +438,9 @@ access_num_unico <- counts_matrix_unico[,1] #making a vector of names that I wan
 rownames(counts_matrix_unico) <- access_num_unico #rename all rows the access_num
 ```
 
-We needed to name the rows the accession number since we will be using this to pull out the top differentially expressed genes that we named in the vector top_genes. Stuck here. Trying to extract only differentially expressed genes that have defined protein names.
+We needed to name the rows the accession number since we will be using this to pull out the top differentially expressed genes that we named in the 
+
+
 ```{r, eval=TRUE, cache=TRUE}
 # Identify top genes that are present in the counts_matrix_unico row names
 present_genes <- intersect(top_genes, row.names(counts_matrix_unico))
@@ -448,7 +455,7 @@ nrow(counts_top) #how many top DEGs are we going to graph?
 
 Renaming rows as protein names so that the axis has them
 ```{r, eval=TRUE, cache=TRUE}
-counts_top_pro <- counts_top[, c(2:5, 8)]
+counts_top_pro <- counts_top[, c(2:5, 9)]
 rownames(counts_top_pro) <- counts_top_pro[,"Protein.names"]
 counts_top_pro <- counts_top_pro[ ,-5]
 counts_top_pro <- as.matrix(counts_top_pro)
@@ -463,7 +470,7 @@ counts_top_pro2 <- matrix(as.numeric(counts_top_pro),
 colnames(counts_top_pro2) <- colnames(counts_top_pro)
 protein_names <- rownames(counts_top_pro)
 
-#scrub up protein names list so that each entry is not as long by removing things that are contained in parenthesis and brackets (i.e. additional but uncessary protein name info).
+#scrub up protein names list so that each entry is not as long by removing things that are contained in parenthesis and brackets (i.e. additional but unnecessary protein name info).
 protein_names2 <- protein_names %>%
   sub(' \\([^)]+\\).*$', '', .) %>%
   sub('\\[.*?\\]', ' ', .)
@@ -488,6 +495,7 @@ pink <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
 blue <- colorRampPalette(brewer.pal(8, "Blues"))(25)
 ```
 
+Note that the x-axis will be re-ordered in this heat map when the functions calculates the dendrogram for the columns.
 ```{r base r heatmaps, eval=TRUE, cache=TRUE}
 # generating different plots with different colors/labels
 heatmap(log_counts_top2, 
@@ -502,26 +510,42 @@ heatmap(log_counts_top2,
 
 
 ```{r playing with other heatmap.2 function, eval=TRUE, cache=TRUE}
-library(gplots)
-
 # Customize the heatmap using heatmap.2
 heatmap.2(log_counts_top2,
           scale="column",
-          cexRow=1,
+          cexRow=0.9,
           margins =c(10,20),
           col=pink,
-          Colv = FALSE, #Keeps x-axis from being reordered
-          ylab = "Protien Names",
-          xlab = "Sample Run ID",
+          Colv = FALSE,              #Keeps x-axis from being reordered but will not then give a dendrogram for samples
+          ylab = "Protien Names",    #y-axis label
+          xlab = "Sample Run ID",    #x-axis label
           key=TRUE,                  # Add a legend
-          keysize = 0.7,               # Set the size of the legend
+          keysize = 0.7,             # Set the size of the legend
           key.title = "Log Counts",  # Legend title
           key.xlab = "Expression",   # Legend x-axis label
           key.ylab = "Frequency",    # Legend y-axis label
           trace="none",              # Remove the trace lines
-          cexCol = 1,              # Adjust column label font size
-          cex.main = 1)              # Adjust main title font size
+          cexCol = 1)                # Adjust column label font size
+
 
 ```
 
 I think I want to come back to this and make heat maps based off conditions not based only on run. However, you will notice that the two samples at the TO stage are looking similar in terms of differential expression but the two samples from the b5-b6 stage are pretty different from one another. I do think this just has to do with sequencing depth as one was sequenced using HISeq.
+
+## Modified Volcano Plot
+
+```{r, eval=TRUE, cache=TRUE}
+
+#reading in again the annotated DEG list made earlier
+ann_DEG <- read.delim(file = "../output/annote_DEGlist.tab", sep =" ", header = TRUE)
+DEG_name <- ann_DEG$V4 #these are the gene names that we want to label our points with
+
+res_df <- as.data.frame(deseq2.res)
+res_df$gene <- row.names(res_df)
+
+EnhancedVolcano(deseq2.res,
+                lab = rownames(deseq2.res),
+                x = "log2FoldChange",
+                y = "pvalue")
+```
+
