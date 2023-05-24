@@ -485,7 +485,7 @@ rownames(counts_top_pro2) <- protein_names2
 log_counts_top2 <- log2(counts_top_pro2 + 1)
 ```
 # Explanatory Visualization
-## Modified Heatmaps
+## Heatmaps
 
 Now that we have a log counts object we can use it to start generating better looking plots:
 
@@ -532,20 +532,34 @@ heatmap.2(log_counts_top2,
 
 I think I want to come back to this and make heat maps based off conditions not based only on run. However, you will notice that the two samples at the TO stage are looking similar in terms of differential expression but the two samples from the b5-b6 stage are pretty different from one another. I do think this just has to do with sequencing depth as one was sequenced using HISeq.
 
-## Modified Volcano Plot
+## Volcano Plot
+
+In order to get gene names that are in the annote_DEGlist.tab printed onto the plot, I think we will have to do some more data wrangling again to modify the deseq2.res df to also include gene ID's. The only thing is, this might take a while, bc I only blasted the deg list not the whole deseq2 results...
+
 
 ```{r, eval=TRUE, cache=TRUE}
+# Merge together all results from DESeq analysis with blast_go data frame
+res_df <- as.data.frame(deseq2.res) %>%
+  mutate(access_num = rownames(.)) %>%
+  distinct()
 
-#reading in again the annotated DEG list made earlier
-ann_DEG <- read.delim(file = "../output/annote_DEGlist.tab", sep =" ", header = TRUE)
-DEG_name <- ann_DEG$V4 #these are the gene names that we want to label our points with
 
-res_df <- as.data.frame(deseq2.res)
-res_df$gene <- row.names(res_df)
+blast_go_small <- distinct(blast_go, access_num, .keep_all = TRUE)
 
-EnhancedVolcano(deseq2.res,
-                lab = rownames(deseq2.res),
-                x = "log2FoldChange",
-                y = "pvalue")
+res_anno <- merge(blast_go_small, res_df, by = "access_num", all = TRUE)
+
+
 ```
+
+```{r, eval=TRUE, cache=TRUE}
+# Create the volcano plot with labeled genes
+EnhancedVolcano(res_anno,
+                lab = res_anno$V4, 
+                x = "log2FoldChange",
+                y = "pvalue",
+                title = "TO vs. b5-b6 Blastogenic Stages in *Botryllus schlosseri*")
+
+
+```
+
 
