@@ -27,8 +27,8 @@ knitr::opts_chunk$set(
   eval = FALSE,         # Evaluate code chunks
   warning = FALSE,     # Hide warnings
   message = FALSE,     # Hide messages
-  fig.width = 12,       # Set plot width in inches
-  fig.height = 13,      # Set plot height in inches
+  fig.width = 7,       # Set plot width in inches
+  fig.height = 10,      # Set plot height in inches
   fig.align = "center" # Align plots to the center
 )
 ```
@@ -514,7 +514,7 @@ heatmap(log_counts_top2,
 heatmap.2(log_counts_top2,
           scale="column",
           cexRow=0.9,
-          margins =c(10,20),
+          margins =c(10,15),
           col=pink,
           Colv = FALSE,              #Keeps x-axis from being reordered but will not then give a dendrogram for samples
           ylab = "Protien Names",    #y-axis label
@@ -526,7 +526,6 @@ heatmap.2(log_counts_top2,
           key.ylab = "Frequency",    # Legend y-axis label
           trace="none",              # Remove the trace lines
           cexCol = 1)                # Adjust column label font size
-
 
 ```
 
@@ -553,12 +552,12 @@ res_anno <- merge(blast_go_small, res_df, by = "access_num", all = TRUE)
 
 ```{r, eval=TRUE, cache=TRUE}
 # Create the volcano plot with labeled genes
+
 EnhancedVolcano(res_anno,
                 lab = res_anno$V4, 
                 x = "log2FoldChange",
                 y = "pvalue",
-                title = "TO vs. b5-b6 Blastogenic Stages in *Botryllus schlosseri*")
-
+                title = "TO vs. b5-b6 Blastogenic Stages")
 
 ```
 
