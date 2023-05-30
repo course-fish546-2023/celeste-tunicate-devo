@@ -1,10 +1,10 @@
-# celeste-tunicate-devo
+# Differential Gene Expression Analysis of two Distinct Asexual Stages in a Marine Tunicate
 
-### View [Project Compendium](https://rpubs.com/cvaldi/1040648) page to see whole workflow in one place!
+### View [Project Compendium](https://rpubs.com/cvaldi/1040648) page to see whole workflow in one place.
 
 
 ### Objectives
-The final objectives of this bioinformatics project is to conduct a differential gene expression analysis of transcriptomic data from two distinct blastogenic stages in the marine model tunicate *Botryllus schlosseri*. This will then be followed up with a functional enrichment analysis to extract biological meaning from significantly differently expressed genes.
+The final objective for this project was to conduct a differential gene expression analysis of transcriptomic data from two distinct blastogenic stages in the marine model tunicate *Botryllus schlosseri*. This will then be followed up with a functional enrichment analysis to extract biological meaning from significantly differently expressed genes.
 
 ### Summary of project
 This repo is dedicated to a bioinformatics project for Spring 2023 FISH 546 at SAFS. My version of this project will involve the replication of some aspects of BioProject [PRJNA579844](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA579844) which has 90 RNAseq run files.
@@ -13,18 +13,16 @@ Briefly, colonial marine tunicates like *Botryllus schlosseri* are capable of bo
 
 Within this project I will evaluate the whole transcriptome of an the early blastogenic stage b5 to b6 in the secondary bud and the late takeover blastogenic stage in the adult zooid.
 
-Within the code folder will be several Rmarkdown files titled with the corresponding week of the spring quarter containing captions and code chunks with weekly updates on progress of this project.
-
-The data folder will remain empty on GitHub since much of the files necessary to the workflow exceed the 100 MB limit. However, the code will be able to access the following data files.
+![TO vs b5-b6](https://github.com/valeste/valeste.github.io/blob/master/assets/img/sex_asex_devo_TO_b5.jpeg?raw=true)
 
 ### Metadata for the four runs I will evaluate
 
-| Run         | Bases       | BioProject  | Bytes      | dev_stage | Instrument  | Isolate                          | Organism             | Platform | Sample Name                            | TISSUE       |
+| Run         | Bases      | Bytes      | dev_stage | Instrument  | Isolate                          | Organism             | Platform | Sample Name                            | TISSUE       |
 |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
-| SRR10352205 | 10576501436 | PRJNA579844 | 6996363570 | b5-b6     | NextSeq 500 | 5491b.2                          | Botryllus schlosseri | ILLUMINA | HISeq-Sample_3411_IL2574-4             | whole system |
-| SRR10352206 | 3609019200  | PRJNA579844 | 1836994542 | b5-b6     | NextSeq 500 | 944a x BYd196.6-4.180 + 5869\*-2 | Botryllus schlosseri | ILLUMINA | 4017_944axbyd196_stageC1to2_SecBud     | whole system |
-| SRR10352224 | 4847587800  | PRJNA579844 | 2533047747 | TO        | NextSeq 500 | Sc109e.109                       | Botryllus schlosseri | ILLUMINA | 3902_Sc109e_olds_zooid_D\_early_mid_kp | whole system |
-| SRR10352254 | 5482368900  | PRJNA579844 | 2984116333 | TO        | NextSeq 500 | Sc109e.113                       | Botryllus schlosseri | ILLUMINA | 3890_Sc109e_old_zooid_D\_mid_Late_kp   | whole system |
+| SRR10352205 | 10576501436 | 6996363570 | b5-b6     | NextSeq 500 | 5491b.2                          | Botryllus schlosseri | ILLUMINA | HISeq-Sample_3411_IL2574-4             | whole system |
+| SRR10352206 | 3609019200  | 1836994542 | b5-b6     | NextSeq 500 | 944a x BYd196.6-4.180 + 5869\*-2 | Botryllus schlosseri | ILLUMINA | 4017_944axbyd196_stageC1to2_SecBud     | whole system |
+| SRR10352224 | 4847587800  | 2533047747 | TO        | NextSeq 500 | Sc109e.109                       | Botryllus schlosseri | ILLUMINA | 3902_Sc109e_olds_zooid_D\_early_mid_kp | whole system |
+| SRR10352254 | 5482368900  | 2984116333 | TO        | NextSeq 500 | Sc109e.113                       | Botryllus schlosseri | ILLUMINA | 3890_Sc109e_old_zooid_D\_mid_Late_kp   | whole system |
 
 ### Meta-metadata to describe column names of metadata
 
