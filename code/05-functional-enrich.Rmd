@@ -28,8 +28,6 @@ library(enrichplot)
 library(biomaRt)  # only use to remove cache bug
 library(tidyverse)
 library(dplyr)
-library(GenomicFeatures)
-library(rtracklayer)
 library(goseq)
 knitr::opts_chunk$set(
   echo = TRUE,         # Display code chunks
@@ -44,124 +42,82 @@ knitr::opts_chunk$set(
 
 
 =======
+# Do DESeq2
+We will use the R package DESeq2 to help us digest the gene abundance count matrix we generated. 
 
-### curling annotation file
-To perform functional enrichment analysis using the R packages biomartr and clusterProfiler, you can start with the following code chunks:
+Below, I am reading in and modifying the count matrix we generated from Kallisto.
 
-This will curl the gene annotation txt file.
-```{r, engine='bash'}
-cd ../data
-curl --insecure -O http://botryllus.stanford.edu/botryllusgenome/download/botznik-gene-ann-2.txt
+We need to create objects in our global environment that can be used towards completing a functional enrichment analysis.
+
+Below we read in the counts matrix, rename the row names from 1-n to the value of the first column, remove the first column, and round the values in the count matrix.
+```{r read in and wrangle count matrix, eval = TRUE}
+countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t') %>%
+  {rownames(.) <- .$X; .} %>%
+  {.[,-1]} %>%
+  {round(., 0)}
+```
+
+We will then make a new data frame that will contain information about the treatment groups and the type of RNAseq data produced. This will an object called "deseq2.colData". We then use the DESeqDataSetFromMatrix function from the DESeq2 package to make a dataset that we can use in our DEseq function to do the analysis.
+```{r deseq2 conditions, eval=TRUE}
+deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
+                             type=factor(rep("paired-end", 4)))
+deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
+                                     colData = deseq2.colData, 
+                                     design = ~ condition)
+```
+
+Next we will conduct a DESeq analysis using the DESeq function:
+```{r deseq analysis, eval=TRUE}
+deseq2.dds <- DESeq(deseq2.dds) 
+deseq2.res <- results(deseq2.dds) #this places the results in an object that we can open
+deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ] #reorders the rows
+head(deseq2.res) #take a peak
+```
+
+### Reading in whole annotated transcriptome
+```{r, eval=TRUE, cache=TRUE}
+blast_go <- read.delim(file = "../output/blast_annot_go.tab")
+colnames(blast_go)[1] <- 'access_num' #renaming the first column 
+
+# Merge together all results from DESeq analysis with blast_go data frame
+res_df <- as.data.frame(deseq2.res) %>%
+  mutate(access_num = rownames(.)) %>%
+  distinct()
+
+#clean up the blast annotated table to keep only unique rows
+blast_go_small <- distinct(blast_go, access_num, .keep_all = TRUE)
+
+transcriptome_anno <- merge(blast_go_small, res_df, by = "access_num", all = TRUE)
 ```
 
 ### Reading in the list of differentially expressed genes:
-Below, we are going to read in the DEGlist.tab we made in the DEG analysis we previously conducted. Below we will clean up the data frame to make a new column with the gene identifiers. Since we used the "complete mRNA records" of Botryllus schlosseri from NCBI to do our psuedo-alignment, the gene identifier column has accession numbers for mRNA reads from NCBI. We will use this column later to annotate what was differentially expressed. I am retroactively blasting the transcriptome reference file to get gene names. Once we have an annotated genome, we can use in this analysis
+We will read in the annotated DEG list that was created in the 04-blast code script.
 ```{r}
-
-diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ")
-diff_genes$rna_access_num <- row.names(diff_genes) #adds the gene name into data frame as new column called gene
-rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n instead of the gene name
-diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
+diff_genes <- read.delim(file = "../output/annote_DEGlist.tab", sep =" ")
 ```
 
+## define gene list and background
+```{r}
+gene_list <- diff_genes$access_num
+background <-transcriptome_anno$access_num
+go_ids <- diff_genes$Gene.Ontology.IDs
+go_bp_annotations <- diff_genes$Gene.Ontology..biological.process
+deg_data <- data.frame(gene = gene_list, GO_ID = go_ids, GO_BP = go_bp_annotations)
 
+
+```
 ### Brainstorming, code may or may not work below, beware... 
-Reading in the gene annotation file, however, this may not be that useful to us since the information we have regarding the ID of the gene is the accession number of the mRNA entry on NCBI in the DEGlist.tab.
-```{r}
-# Set the path to the gene annotation file
-anno_file <- "../data/botznik-gene-ann-2.txt"
 
-# Read in the gene annotation file
-anno <- tryCatch(
-  read.table(anno_file, header = TRUE, sep = "\t", fill = TRUE, stringsAsFactors = FALSE), #fille = TRUE helps handle the missing values in the annotation file
-  error = function(e) {
-    message("Error reading the file: ", e$message)
-    data.frame()
-  }
-)
-
-```
-`
-Code that will potentially take the accession numbers of our diff_genes df and get gene ontology terms for them. Although, I am blasting the reference transcriptome to get the gene names...
-```{r}
-# Get the gene names
-gene_list <- diff_genes$rna_access_num
-
-# Get the GO terms for the differentially expressed genes
-go <- getGO(organism = "Botryllus schlosseri", genes = gene_list)
-
-```
 
 ```{r}
-
-# Calculate the enrichment of GO terms
-go_enrichment <- enrichGO(gene = names(go), 
-                          universe = gene_names, 
-                          ont = "BP", 
-                          pvalueCutoff = 0.01, 
-                          qvalueCutoff = 0.1, 
-                          keyType = "ENSEMBL")
-
-# Get the KEGG pathways for the differentially expressed genes
-kegg <- getKEGG(gene.names = gene_names,
-                org = "bschlosseri",
-                output.format = "list")
-
-# Calculate the enrichment of KEGG pathways
-kegg_enrichment <- enrichKEGG(gene = names(kegg), 
-                              organism = "bschlosseri",
-                              pvalueCutoff = 0.01,
-                              qvalueCutoff = 0.1)
-
-# Visualize the results
-dotplot(go_enrichment)
-dotplot(kegg_enrichment)
+enrich_result <- enricher(gene = gene_list,
+                          pAdjustMethod = "BH",
+                          universe = background,
+                          TERM2GENE = deg_data,
+                          pvalueCutoff = 0.05,
+                          qvalueCutoff = 0.05)
 
 ```
 
 
 
-
-
-### next steps after merging two tables
-3. Create a gene ID conversion table that maps the gene IDs in the differential gene expression table to the gene IDs in the annotation file. This step is necessary because the gene IDs in the differential expression table may be different from those in the annotation file:
-
-```{r}
-# Create gene ID conversion table
-id_conversion_table <- anno_file[, c("Gene.ID", "Gene.Name")]
-colnames(id_conversion_table) <- c("ensembl_gene_id", "gene_symbol")
-id_conversion_table <- id_conversion_table[!duplicated(id_conversion_table$ensembl_gene_id), ]
-id_conversion_table$ensembl_gene_id <- gsub("\\..*", "", id_conversion_table$ensembl_gene_id)
-
-# Map differential gene expression data to annotation information
-diff_genes$ensembl_gene_id <- diff_genes$gene
-diff_genes$gene_symbol <- mapIds(id_conversion_table, 
-                                  keys = diff_genes$ensembl_gene_id, 
-                                  column = "ensembl_gene_id", 
-                                  keytype = "ENSEMBL_ID", 
-                                  multiVals = "first")
-```
-
-4. Filter out genes that do not have a corresponding gene symbol in the annotation file:
-
-```{r}
-# Filter out genes without gene symbols
-diff_genes <- diff_genes[!is.na(diff_genes$gene_symbol), ]
-```
-
-5. Perform functional enrichment analysis using the clusterProfiler package. You can choose a functional annotation database such as Gene Ontology (GO) or KEGG pathways, and specify the significance level threshold for selecting enriched terms:
-
-```{r}
-# Perform functional enrichment analysis using GO database
-ego <- enrichGO(gene         = diff_genes$gene_symbol,
-                universe    = unique(anno_file$Gene.Name),
-                ont         = "BP",
-                pAdjustMethod = "BH",
-                pvalueCutoff  = 0.05,
-                qvalueCutoff  = 0.1)
-                
-# Print the top enriched terms
-head(ego)
-```
-
-This code should help you get started with performing functional enrichment analysis using R packages biomartr and clusterProfiler. You can modify the code as necessary based on your specific research question and data.
