@@ -9,6 +9,7 @@ output:
     toc: true
     toc_float: true
     toc_depth: 3
+    css: "celeste-tunicate-devo/style.css"
 ---
 
 ```{r setup, include=FALSE}
@@ -27,8 +28,8 @@ knitr::opts_chunk$set(
   eval = FALSE,         # Evaluate code chunks
   warning = FALSE,     # Hide warnings
   message = FALSE,     # Hide messages
-  fig.width = 7,       # Set plot width in inches
-  fig.height = 10,      # Set plot height in inches
+  fig.width = 10,       # Set plot width in inches
+  fig.height = 15,      # Set plot height in inches
   fig.align = "center" # Align plots to the center
 )
 ```
@@ -184,7 +185,6 @@ We will then make a new data frame that will contain information about the treat
 ```{r deseq2 conditions, eval=TRUE}
 deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
                              type=factor(rep("paired-end", 4)))
-rownames(deseq2.colData) <- colnames(data) 
 deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
                                      colData = deseq2.colData, 
                                      design = ~ condition)
@@ -213,13 +213,6 @@ write.table(tmp.sig, "../output/DEGlist.tab", row.names = T)
 # Exploratory Visualization
 It is normal to go through the count matrix and begin evaluating what we have before we start tidying our figures into something more digestible. As such, we will be working with the current gene ID that we got from the reference transcriptome which are a bunch of accession numbers pulled from NCBI. We can't make much meaningful conclusions from these exploratory figures but we can get an idea of the direction we should move in and if there was anything truly differentially expressed.
 
-## Principle Components Analysis (PCA)
-
-```{r pca, eval=TRUE}
-vsd <- vst(deseq2.dds, blind = FALSE)
-plotPCA(vsd, intgroup = "condition")
-```
-
 ## Exploratory Heatmap
 ```{r heatmap, eval=TRUE}
 # Select top 50 differentially expressed genes
@@ -237,6 +230,27 @@ log_counts_top <- log2(counts_top + 1)
 # Generate heatmap
 pheatmap(log_counts_top, scale = "row")
 ```
+
+```{r}
+# Create a matrix to store the samples grouped by conditions
+sample_groups <- split(colnames(log_counts_top), deseq2.colData$condition)
+
+# Sort the sample groups
+sample_groups <- sample_groups[order(names(sample_groups))]
+
+# Define the desired condition labels
+condition_labels <- c("b5-b6", "TO")
+
+# Extract column labels based on condition labels
+column_labels <- unlist(lapply(sample_groups, function(x) condition_labels[which(x %in% colnames(log_counts_top))]))
+
+# Generate heatmap with sample groups
+pheatmap(log_counts_top, scale = "row", cluster_rows = TRUE, cluster_cols = TRUE,
+         labels_col = column_labels, labels_row = FALSE,
+         color = colorRampPalette(c("blue", "white", "red"))(100),
+         breaks = seq(-3, 3, length.out = 101), show_rownames = FALSE)
+```
+
 
 ## Exploratory Volcano Plot
 ```{r volcano, eval=TRUE}
@@ -367,14 +381,14 @@ head -n 3 DEGlist.tab
 
 ```{r clean up DEGlist, eval=TRUE, cache=TRUE}
 diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ", header = TRUE)
-diff_genes$access_num <- row.names(diff_genes) #adds the gene name into data frame as new column called gene
-rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n instead of the gene name
+diff_genes$access_num <- row.names(diff_genes) #new column
+rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n 
 diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
 ```
 Next we will read in the blast annotate GO terms table that we made above as an object into our R environment
 ```{r read in blast annotated go table, eval=TRUE, cache=TRUE}
 blast_go <- read.delim(file = "../output/blast_annot_go.tab")
-colnames(blast_go)[1] <- 'access_num' #renaming the first column so it has the same name as the diff_genes data frame above
+colnames(blast_go)[1] <- 'access_num' #renaming the first column 
 ```
 
 Now that we have both the blast go and differential gene list in the right format, we can merge the two so that we have information regarding gene ID and function paired with differentially expressed genes.
@@ -393,7 +407,7 @@ write.table(annote_DEGlist, "../output/annote_DEGlist.tab", row.names = T)
 # Wrangling Annotated DEG Data
 
 Make a vector of the top 100 differentially expressed genes:
-```{r, eval=TRUE, cache=TRUE}
+```{r top 100 DEGs, eval=TRUE, cache=TRUE}
 
 # Select top 100 differentially expressed genes
 deseq2.res <- results(deseq2.dds)
@@ -402,8 +416,8 @@ res_ordered <- deseq2.res[order(deseq2.res$padj), ]
 top_genes <- row.names(res_ordered)[1:100] 
 ```
 Next in order to merge the annotated blast table with the counts data we will need to transform the counts matrix into a data frame so that we can use the merge() function.
-```{r, eval=TRUE, cache=TRUE}
-#extract counts and normalizes them and then we put it all in a data frame so that it can
+```{r counts matrix to df, eval=TRUE, cache=TRUE}
+#extract counts and normalizes them 
 counts <- counts(deseq2.dds, normalized = TRUE)
 countsdf <- as.data.frame(counts)
 countsdf$access_num <- row.names(countsdf) #new column
@@ -411,16 +425,17 @@ countsdf <- countsdf[ , c(5, 1:4)] #puts accession col in front
 ```
 
 Read in blast annotated table:
-```{r, eval=TRUE, cache=TRUE}
+```{r blast annotated table, eval=TRUE, cache=TRUE}
 blast_go <- read.delim(file = "../output/blast_annot_go.tab")
 #renaming the first column so it has the same name for merging
 colnames(blast_go)[1] <- 'access_num' 
 ```
 
 Merge blast data frame and count data frame by an inner join so that we can just label genes that exist in the countsdf data frame. Note that there will be duplicate protein entries in this new merged data frame that got annotated the same in BLASTing. This is normal and so we are just going to get rid duplicates so that we are actually able to visualize whats going on.
-```{r, eval=TRUE, cache=TRUE}
+```{r merge annotated blast table and counts df, eval=TRUE, cache=TRUE}
 #merge the blast table and counts table together
-counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) #won't work unless they are both data frames
+#both must be data frames
+counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) 
 
 #checking if there any duplicates
 head(which(duplicated(counts_pro))) 
@@ -433,14 +448,12 @@ head(which(duplicated(counts_pro_unico)))
 
 counts_matrix_unico <- as.matrix(counts_pro_unico) #make this a matrix again so it can take the rownames()
 
-access_num_unico <- counts_matrix_unico[,1] #making a vector of names that I want to assign to the new matrix
+access_num_unico <- counts_matrix_unico[,1] #making a vector of names
 
 rownames(counts_matrix_unico) <- access_num_unico #rename all rows the access_num
 ```
 
-We needed to name the rows the accession number since we will be using this to pull out the top differentially expressed genes that we named in the 
-
-
+We needed to name the rows the accession number since we will be using this to pull out the top differentially expressed genes that we named in the beginning of this section.
 ```{r, eval=TRUE, cache=TRUE}
 # Identify top genes that are present in the counts_matrix_unico row names
 present_genes <- intersect(top_genes, row.names(counts_matrix_unico))
@@ -462,15 +475,16 @@ counts_top_pro <- as.matrix(counts_top_pro)
 ```
 
 
-Next we have to do a log transformation of the counts but this first means making a new matrix that takes the contents of the previous one (charcter values) and converts them into numeric values to apply the arithmetic function of log2().
+Next we have to do a log transformation of the counts but this first means making a new matrix that takes the contents of the previous one (character values) and converts them into numeric values to apply the arithmetic function of log2().
 ```{r getting log counts, eval=TRUE, cache=TRUE}
-#convert the counts into numbers from characters into new matrix and renaming the col and row names of that new matrix
+#convert the counts into numbers from characters 
+#into new matrix and renaming the col and row names of that new matrix
 counts_top_pro2 <- matrix(as.numeric(counts_top_pro),
                           ncol = ncol(counts_top_pro))
 colnames(counts_top_pro2) <- colnames(counts_top_pro)
 protein_names <- rownames(counts_top_pro)
 
-#scrub up protein names list so that each entry is not as long by removing things that are contained in parenthesis and brackets (i.e. additional but unnecessary protein name info).
+#scrub up protein names list so that each entry is not as long 
 protein_names2 <- protein_names %>%
   sub(' \\([^)]+\\).*$', '', .) %>%
   sub('\\[.*?\\]', ' ', .)
@@ -485,6 +499,14 @@ rownames(counts_top_pro2) <- protein_names2
 log_counts_top2 <- log2(counts_top_pro2 + 1)
 ```
 # Explanatory Visualization
+## Principle Components Analysis
+```{r PCA, eval = TRUE, cache=TRUE}
+vsd <- vst(deseq2.dds, blind = FALSE)
+
+plotPCA(vsd, intgroup = "condition")
+```
+
+
 ## Heatmaps
 
 Now that we have a log counts object we can use it to start generating better looking plots:
@@ -514,9 +536,9 @@ heatmap(log_counts_top2,
 heatmap.2(log_counts_top2,
           scale="column",
           cexRow=0.9,
-          margins =c(10,15),
+          margins =c(10,20),
           col=pink,
-          Colv = FALSE,              #Keeps x-axis from being reordered but will not then give a dendrogram for samples
+          Colv = FALSE,              #Keeps x-axis from being reordered
           ylab = "Protien Names",    #y-axis label
           xlab = "Sample Run ID",    #x-axis label
           key=TRUE,                  # Add a legend
@@ -526,35 +548,31 @@ heatmap.2(log_counts_top2,
           key.ylab = "Frequency",    # Legend y-axis label
           trace="none",              # Remove the trace lines
           cexCol = 1)                # Adjust column label font size
-
 ```
-
-I think I want to come back to this and make heat maps based off conditions not based only on run. However, you will notice that the two samples at the TO stage are looking similar in terms of differential expression but the two samples from the b5-b6 stage are pretty different from one another. I do think this just has to do with sequencing depth as one was sequenced using HISeq.
 
 ## Volcano Plot
 
-In order to get gene names that are in the annote_DEGlist.tab printed onto the plot, I think we will have to do some more data wrangling again to modify the deseq2.res df to also include gene ID's. The only thing is, this might take a while, bc I only blasted the deg list not the whole deseq2 results...
-
+In order to get gene names that are in the annote_DEGlist.tab printed onto the plot, we will have to do some more data wrangling again to modify the deseq2.res df to also include gene ID's. 
 
 ```{r, eval=TRUE, cache=TRUE}
+blast_go <- read.delim(file = "../output/blast_annot_go.tab")
+colnames(blast_go)[1] <- 'access_num' #renaming the first column 
+
 # Merge together all results from DESeq analysis with blast_go data frame
 res_df <- as.data.frame(deseq2.res) %>%
   mutate(access_num = rownames(.)) %>%
   distinct()
 
-
+#clean up the blast annotated table to keep only unique rows
 blast_go_small <- distinct(blast_go, access_num, .keep_all = TRUE)
 
-res_anno <- merge(blast_go_small, res_df, by = "access_num", all = TRUE)
-
-
+transcriptome_anno <- merge(blast_go_small, res_df, by = "access_num", all = TRUE)
 ```
 
 ```{r, eval=TRUE, cache=TRUE}
 # Create the volcano plot with labeled genes
-
-EnhancedVolcano(res_anno,
-                lab = res_anno$V4, 
+EnhancedVolcano(transcriptome_anno,
+                lab = transcriptome_anno$V4, 
                 x = "log2FoldChange",
                 y = "pvalue",
                 title = "TO vs. b5-b6 Blastogenic Stages")
