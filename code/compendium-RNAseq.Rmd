@@ -1,5 +1,5 @@
 ---
-title: "RNAseq Project Compendium"
+title: "**Differential Gene Expression Analysis of two Distinct Asexual Stages in a Marine Tunicate**"
 author: "Celeste Valdivia"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -9,7 +9,6 @@ output:
     toc: true
     toc_float: true
     toc_depth: 3
-    css: "celeste-tunicate-devo/style.css"
 ---
 
 ```{r setup, include=FALSE}
@@ -29,24 +28,31 @@ knitr::opts_chunk$set(
   warning = FALSE,     # Hide warnings
   message = FALSE,     # Hide messages
   fig.width = 10,       # Set plot width in inches
-  fig.height = 15,      # Set plot height in inches
+  fig.height = 10,      # Set plot height in inches
   fig.align = "center" # Align plots to the center
 )
 ```
 
-# Project Summary
+# **Project Overview**
+
+## Research Question
+#### How do the transcriptomic profiles differ between two developmental stages in *Botryllus schlosseri*?
+
+## Background
 I have conducted a small scale replication of the transcriptomic BioProject [PRJNA579844](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA579844) which has 90 RNAseq run files itself.
 
 Briefly, colonial marine tunicates like *Botryllus schlosseri* are capable of both sexually reproducing through a single fertilized egg (embryogenesis) and through asexual reproduction where new generations are derived from somatic cells of the parental body (blastogenesis). In healthy *Botryllus schlosseri*, blastogenesis occurs as a weekly synchronized process. Transcriptomic data available from this project isolated RNA across several developmental stages of *Botryllus schlosseri* from the whole body.
 
-Within this project I will evaluate the whole transcriptome of an the early blastogenic stage b5 to b6 in the secondary bud and the late takeover (TO) blastogenic stage in the adult zooid. Below is a schematic that helps visualize these two stages:
+Within this project I compared the whole transcriptome of early blastogenic stage b5-b6 in the secondary bud to the late takeover (TO) blastogenic stage in the adult zooid. Below is a schematic that helps visualize these two stages:
 
 ![Asexual developmental cycle of *Botryllus schlosseri*](https://github.com/valeste/valeste.github.io/blob/master/assets/img/sex_asex_devo_TO_b5.jpeg?raw=true)
 
+## Bioinformatics Workflow
+![](https://github.com/course-fish546-2023/celeste-tunicate-devo/blob/main/notes/workflow1.jpeg?raw=true)
 
-# Metadata
+# **Metadata**
 
-For the four runs I am evaluating, below is the Metadata I pulled from SRA Run Selector. This info will be useful down the line when we begin visualizaing our analyses.
+Below is the metadata from SRA Run Selector.
 
 |     Run     |    Bases    | BioProject  |   Bytes    | dev_stage  |       Organism        | Platform  |    Tissue    |
 |-------------|-------------|-------------|------------|------------|-----------------------|-----------|--------------|
@@ -56,13 +62,12 @@ For the four runs I am evaluating, below is the Metadata I pulled from SRA Run S
 | SRR10352254 | 5482368900  | PRJNA579844 | 2984116333 | TO         |  Botryllus schlosseri | ILLUMINA  | whole system |
 
 
-# Accessing Data
+# **Accessing Data**
 1. Go to the  NCBI page for BioProject [PRJNA579844](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA579844) and select the numeric value next to "SRA Experiments" which indicates the number of runs in this project. 
-2. On the top right corener select "Send to" and from the drop down menu select "Run Selector.
+2. On the top right corner select "Send to" and from the drop down menu select "Run Selector.
 3.  Run selector will show you all the runs available for the BioProject of interest with all the metadata. You can download metadata or accession list (SRR numbers) to keep track of your runs of interest. 
 
 ## Identify Raw Data Storage Directory
-Below we move to a large hard drive and make a new directory where we will store our data.
 ```{r make raw data directory, engine='bash', eval = FALSE}
 # move to a large hard drive
 cd /home/shared/8TB_HDD_01
@@ -72,7 +77,8 @@ mkdir cvaldi/tunicate-fish546/raw
 ```
 
 ## Download RNAseq NCBI Files
-Since we are downloading data from NCBI, we will use NCBI's SRA Toolkit to do so. Below we bypass the prefetch command and use the fasterq-dump command directlry. Skipping the prefetch command just makes the downloading time longer. We specify the directory we want the raw data files stored in the '--outdir' subcommand. 
+Here we used NCBI's SRA Toolkit to download raw fastq files using `fasterq-dump`. 
+
 ```{r read in raw data, engine = 'bash'}
 /home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
 --outdir /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw \
@@ -84,34 +90,38 @@ SRR10352254
 ```
 
 ## Gereate Checksums
-We will make checksums for all the raw fastq files using the '*' wildcard. This will help us evaluate data integrity downstream.
+Below we generated checksums for all the raw fastq files using the bash `md5sum` command.
 ```{r generate checksums, engine = 'bash'}
-cd raw
+cd /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw
 md5sum *.fastq > md5.original.download.20230413
 ```
-The following code chunk will show us the checksums in the new md5 file we made. 
-```{r evaluate checksums, engine ='bash'}
-cat md5.original.download.20230413
+
+```{r evaluate checksums, engine ='bash', eval = TRUE}
+cat /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/md5.original.download.20230413
 ```
 
-# QAQC Raw Files
+# **QAQC Raw Files**
 
-Below, we run the fastqc software on all the fastq files in the raw directory. FastQC will produce html reports of the quality of the raw RNAseq data. We can use this information to trim the data, but we can loop back to this after conducting the initial exploratory flow.
+Below, we used the FastQC software to generate html reports regarding the quality of the raw RNAseq data. 
 ```{r QAQC, engine='bash'}
 cd ../raw
 /home/shared/FastQC/fastqc *.fastq
 ```
 
-# Differential Gene Expression Analysis 
-*Botrylus schlosseri* currently have several bioinformatic data files available for download on Stanford University's [*Botryllus schlosseri* Genome Project Server](http://botryllus.stanford.edu/botryllusgenome/download/). To do any differential gene expression analysis, you will need either a reference (annotated) genome or reference transcriptome to be able to align your RNAseq data to that reference. Although the *Botryllus schlosseri* genome server does have annotated genomes in the form of gff files, they are in a non-standard format that need to be normalized in order for it to run through a standard genome alignment workflow using HISat2. As such, we will conduct a **psuedo-alignment** of our RNAseq files against a reference transcriptome that we generate from all the mRNA files available for this species on NCBI. 
+# **Accessing Reference**
+*Botryllus schlosseri* currently have several bioinformatic data files available for download on Stanford University's [*Botryllus schlosseri* Genome Project Server](http://botryllus.stanford.edu/botryllusgenome/download/). To do any differential gene expression analysis, you will need either a reference (annotated) genome or reference transcriptome to be able to align your RNAseq data to that reference. Although the *Botryllus schlosseri* genome server does have annotated genomes, they are in a non-standard format that need to be normalized in order for it to run through a standard genome alignment workflow using HISat2. 
+
+As such, here we conducted a **psuedo-alignment** of the RNAseq files against a reference transcriptome that was generated from all the mRNA files available for this species on NCBI. 
 
 ## Creating Reference Transcriptome
 1. Navigate to the [*Botryllus schlosseri* NCBI](https://www.ncbi.nlm.nih.gov/search/all/?term=boryllus%20schlosseri) page.
 2. Select "Nucleotides" of which there are currently about 100 K files currently available.
 3. On the lefthand navigation menu, under "Molecule Type" select "mRNA" (there are about 99 K files). This will filter out the list we have.
 4. Select "Send to" on the top part of the page and select "Complete Record". This will download a file called "sequence.fasta" that will contain all ~99,000 mRNA files from that list. Download this file, because it is under 100 MB we can store it on GitHub.
- 
-Below, we use the kallisto index command to take the sequence.fasta file we downloaded, index it, name the index "bsc_rna.index" and store it in the data directory of our project.
+
+# **Quantify Transcript Abundances**
+## Indexing Reference Transcriptome
+Below, we used the *Kallisto* `index` command to index the reference transcriptome and name the index "bsc_rna.index".
 ```{r index reference, engine = 'bash'}
 /home/shared/kallisto/kallisto \
 index -i \
@@ -121,7 +131,7 @@ index -i \
 
 ## Psuedo-alignment
 
-Below is a loop that will iterate through all the fastq files in the raw data directory and align them to the reference index using the quant command in Kallisto. It will quantify abundance of transcripts for each pair of fastq files (since we have paired-end reads for each query). It then takes the base name of the input file and creates and names a new folder fore each query based on the base name.
+Below we used the `quant` command in *Kallisto* to align all the raw fastq files ot the reference index. This quantified abundance of transcripts for each query.
 
 ```{r pseudo-align, engine='bash'}
 #!/bin/bash
@@ -152,7 +162,7 @@ done
 
 ## Creating Count Matrix
 
-This command runs the abundance_estimates_to_matrix.pl script from the Trinity RNA-seq assembly software package to create a gene expression count matrix from "abundance.tsv" Kallisto output files. 
+We used the abundance_estimates_to_matrix.pl script from the *Trinity* RNA-seq assembly software package to create a gene expression count matrix from the "abundance.tsv" *Kallisto* output files. 
 
 ```{r generate count matrix, engine = 'bash'}
 perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
@@ -168,11 +178,9 @@ perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
 ```
 
 
-# Using DESeq2
-We will use the R package DESeq2 to help us digest the gene abundance count matrix we generated. 
+# **Differential Gene Expression Analysis**
 
-Below, I am reading in and modifying the count matrix we generated from Kallisto.
-
+Below, we read in and modify the count matrix we generated from *Kallisto*.
 ```{r read in and wrangle count matrix, eval = TRUE}
 countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t')
 rownames(countmatrix) <- countmatrix$X #rename row names from 1-n to the value of the first column called x
@@ -181,7 +189,7 @@ countmatrix <- round(countmatrix, 0) #rounds values in count matrix
 head(countmatrix) #take a peak at the data frame
 ```
 
-We will then make a new data frame that will contain information about the treatment groups and the type of RNAseq data produced. This will an object called "deseq2.colData". We then use the DESeqDataSetFromMatrix function from the DESeq2 package to make a dataset that we can use in our DEseq function to do the analysis.
+We then made a new data frame that contains information about the treatment groups and the type of RNAseq data produced. We then used the `DESeqDataSetFromMatrix` function from the *DESeq2* package to prepare a data set for the DEG analysis.
 ```{r deseq2 conditions, eval=TRUE}
 deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
                              type=factor(rep("paired-end", 4)))
@@ -190,29 +198,32 @@ deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
                                      design = ~ condition)
 ```
 
-Next we will conduct a DESeq analysis using the DESeq function:
+Next we will conduct the differential gene expression analysis using the `DESeq` function:
 ```{r deseq analysis, eval=TRUE}
 deseq2.dds <- DESeq(deseq2.dds) 
 deseq2.res <- results(deseq2.dds) #this places the results in an object that we can open
 deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ] #reorders the rows
+
+```
+
+Evaluate the DEseq results.
+```{r peak at deseq results, eval=TRUE}
 head(deseq2.res) #take a peak
 ```
 
-We can check the number of hits we got from our data using the nrow function which will count the number of rows where we have a p-adjusted value less than or equal to 0.05.
-```{r p-value hits}
+Check the number of "hits" in the DEseq results using the `nrow` function. 
+```{r p-value hits, eval=TRUE, cache=TRUE}
 # Count number of hits with adjusted p-value less then 0.05
 nrow(deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ])
 tmp.sig <- deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ] #writes significant hits into an object
 ```
 
-Finally, we should write out the list of differentially expressed genes into a tab file that we will need to annotate.
+Finally, we write out the list of differentially expressed genes into a tab file that will later be annotated.
 ```{r generate degList}
 write.table(tmp.sig, "../output/DEGlist.tab", row.names = T)
 ```
 
-# Exploratory Visualization
-It is normal to go through the count matrix and begin evaluating what we have before we start tidying our figures into something more digestible. As such, we will be working with the current gene ID that we got from the reference transcriptome which are a bunch of accession numbers pulled from NCBI. We can't make much meaningful conclusions from these exploratory figures but we can get an idea of the direction we should move in and if there was anything truly differentially expressed.
-
+# **Exploratory Visualization**
 ## Exploratory Heatmap
 ```{r heatmap, eval=TRUE}
 # Select top 50 differentially expressed genes
@@ -229,26 +240,6 @@ log_counts_top <- log2(counts_top + 1)
 
 # Generate heatmap
 pheatmap(log_counts_top, scale = "row")
-```
-
-```{r}
-# Create a matrix to store the samples grouped by conditions
-sample_groups <- split(colnames(log_counts_top), deseq2.colData$condition)
-
-# Sort the sample groups
-sample_groups <- sample_groups[order(names(sample_groups))]
-
-# Define the desired condition labels
-condition_labels <- c("b5-b6", "TO")
-
-# Extract column labels based on condition labels
-column_labels <- unlist(lapply(sample_groups, function(x) condition_labels[which(x %in% colnames(log_counts_top))]))
-
-# Generate heatmap with sample groups
-pheatmap(log_counts_top, scale = "row", cluster_rows = TRUE, cluster_cols = TRUE,
-         labels_col = column_labels, labels_row = FALSE,
-         color = colorRampPalette(c("blue", "white", "red"))(100),
-         breaks = seq(-3, 3, length.out = 101), show_rownames = FALSE)
 ```
 
 
@@ -275,29 +266,22 @@ print(volcano_plot)
 ```
 
 
-# BLAST Reference Transcriptome
-Now in order extract actual meaning from our results, we will need to BLAST the reference transcriptome to get gene ontology terms and protein names.
+# **Annotate Reference Transcriptome**
 
-Lets look at what's in the sequence.fasta file before we BLAST it.
+Lets look at what's in the reference transcriptome file before we BLAST it.
 ```{r evaluate reference for content, engine='bash', eval = TRUE}
 cd ../data/psuedo-alignment
 head sequence.fasta
+```
+
+```{r, engine='bash', eval=TRUE}
+cd ../data/psuedo-alignment
 echo "How many sequences are there?"
 grep -c ">" sequence.fasta
 ```
 
-## Download UniProt Database
-UniProt is a freely accessible database of protein sequence and functional information that is continuously updated every 8 weeks. 
-```{r uniprot data download, engine = 'bash'}
-cd ../data
-curl -O https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
-mv uniprot_sprot.fasta.gz uniprot_sprot_r2023_01.fasta.gz
-gunzip -k uniprot_sprot_r2023_01.fasta.gz
-ls ../data
-```
-
 ## Make a BLAST Database
-Using the NCBI blast software command 'makeblastdb' to create a blast database from the UniProt fasta file.
+Use the NCBI blast software command `makeblastdb` to create a blast database from the UniProt fasta file.
 ```{r generate blast database, engine='bash'}
 /home/shared/ncbi-blast-2.11.0+/bin/makeblastdb \
 -in /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/uniprot_sprot_r2023_01.fasta \
@@ -306,7 +290,7 @@ Using the NCBI blast software command 'makeblastdb' to create a blast database f
 ```
 
 ## BLAST Nucleotides to Protiens
-Here we use the blastx command to BLAST the reference transcriptome and make a new table that includes the estimated protein ID associated with the gene ID in our original reference transcriptome.
+Here we used the `blastx` command to BLAST the reference transcriptome and made a new table that includes the associated gene ID for each sequence in the original reference transcriptome.
 ```{r blast reference, engine='bash'}
 /home/shared/ncbi-blast-2.11.0+/bin/blastx \
 -query /home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/psuedo-alignment/sequence.fasta \
@@ -318,13 +302,7 @@ Here we use the blastx command to BLAST the reference transcriptome and make a n
 -outfmt 6
 ```
 
-Lets take a little peak at the tab file we just created:
-```{r evaluate blast output contents, engine='bash', eval= TRUE}
-head -5 ../output/Bsc-uniprot_blastx.tab
-wc -l ../output/Bsc-uniprot_blastx.tab
-```
-
-Below, we are going to clean up the tab file we created to separate out the information regarding the estimated protein sequence.
+Below, we clean up the tab file we created to separate out the information regarding gene ID.
 ```{r cleanup blast output, engine = 'bash'}
 tr '|' '\t' < ../output/Bsc-uniprot_blastx.tab | head -2
 
@@ -333,23 +311,29 @@ tr '|' '\t' < ../output/Bsc-uniprot_blastx.tab | head -2
 
 tr '|' '\t' < ../output/Bsc-uniprot_blastx.tab \
 > ../output/Bsc-uniprot_blastx_sep.tab
-
 ```
 
+Peak at the BLASTed reference:
 ```{r, engine='bash', eval=TRUE, cache=TRUE}
-# peaking at the output file earlier on
 head -2 ../output/Bsc-uniprot_blastx_sep.tab
-wc -l ../output/Bsc-uniprot_blastx_sep.tab
+```
+
+## Download UniProt Database
+UniProt is a freely accessible database of protein sequence and functional information that is continuously updated every 8 weeks. 
+```{r uniprot data download, engine = 'bash'}
+cd ../data
+curl -O https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
+mv uniprot_sprot.fasta.gz uniprot_sprot_r2023_01.fasta.gz
+gunzip -k uniprot_sprot_r2023_01.fasta.gz
 ```
 
 ## Merge BLAST and UniProt Tables
-First read in the blast table
+First read in the BLASTed reference transcriptome table into the R global environment.
 ```{r read in blast output}
-# reading into r environ the blast table we created
 bltabl <- read.csv("../output/Bsc-uniprot_blastx_sep.tab", sep = '\t', header = FALSE)
 ```
 
-Then we are going to grab the UniProt table that is stored on Gannet.
+Also read in a UniProt table into the R global environment.
 ```{r read in uniprot table}
 #reading in annotation table from Gannet and saving as object....
 url <- "https://gannet.fish.washington.edu/seashell/snaps/uniprot_table_r2023_01.tab"
@@ -357,7 +341,7 @@ response <- GET(url, config(ssl_verifypeer = FALSE))
 spgo <- read.csv(text = rawToChar(response$content), sep = "\t", header = TRUE)
 ```
 
-Joining the two tables and saving this in our output directory as our blast annotated GO table called "blast_annot_go.tab".
+Joining the two tables.
 ```{r join uniprot table and blast table}
 left_join(bltabl, spgo,  by = c("V3" = "Entry")) %>%
   select(V1, V3, V4, V13, Protein.names, Organism, Gene.Ontology..biological.process., Gene.Ontology.IDs) %>% 
@@ -366,62 +350,67 @@ left_join(bltabl, spgo,  by = c("V3" = "Entry")) %>%
   write_delim("../output/blast_annot_go.tab", delim = '\t')
 ```
 
-Let's look at the first 2 lines of our annotated reference transcriptome. It now contains the original gene ID and Gene Ontology (GO) terms that will help us understand our DEGlist from our differential gene expression analysis. 
+Evaluate annotated reference transcriptome. It now contains the original gene ID, gene names, Gene Ontology (GO) terms, and protein names.
 ```{r view blast annotated go table, engine ='bash', eval = TRUE, cache = TRUE}
 cd ../output
 head -n 2 blast_annot_go.tab
 ```
 
-# Merge Annotated Table with DEGlist
-If you take a look at the DEGlist.tab file below, you will see that the row names themselves are the gene ID's. This contrasts with the blast GO annotated table that has a whole column (V1) dedicated to the gene ID in the same format. As such, we first need to take the row names of the DEGlist.tab and make them into a new column. It was originally in it's own column but we needed to convert it so that it could go through the DESeq workflow.
+# **Merge Annotated Reference with DEG List**
+Evaluate DEG list. Data needs to be cleaned before we can merge it with the annotated reference.
 ```{r evaluate DEGlist content, engine='bash', eval= TRUE, cache = TRUE}
 cd ../output
 head -n 3 DEGlist.tab
 ```
 
+Read in DEG list as object into R environment and clean up the data frame.
 ```{r clean up DEGlist, eval=TRUE, cache=TRUE}
 diff_genes <- read.delim(file = "../output/DEGlist.tab", sep =" ", header = TRUE)
 diff_genes$access_num <- row.names(diff_genes) #new column
 rownames(diff_genes) <- diff_genes$X #renames all the rows to 1-n 
 diff_genes <- diff_genes[,c(7, 1:6)] #puts the gene column in front
 ```
-Next we will read in the blast annotate GO terms table that we made above as an object into our R environment
+
+Next, read in the blast annotated GO terms table into our R environment.
 ```{r read in blast annotated go table, eval=TRUE, cache=TRUE}
 blast_go <- read.delim(file = "../output/blast_annot_go.tab")
 colnames(blast_go)[1] <- 'access_num' #renaming the first column 
 ```
 
-Now that we have both the blast go and differential gene list in the right format, we can merge the two so that we have information regarding gene ID and function paired with differentially expressed genes.
+Now that we have both the blast go and differential gene list in the right format, we can merge the two so that we have information regarding gene ID and function paired with the list of differentially expressed genes.
 ```{r, eval=TRUE, cache=TRUE}
 # Perform inner join between diff_genes and blast_go data frames based on shared "access_num" column
 annote_DEGlist <- merge(diff_genes, blast_go, by = "access_num", all = FALSE)
-
-# Print the merged table
-head(annote_DEGlist)
 ```
-Finally, let's write out the annotated DEG list to save it to our output directory.
+
+```{r, eval=TRUE, cache=TRUE}
+# Print the merged table
+head(annote_DEGlist, 2)
+```
+
+Finally, write out the annotated DEG list to save it to our output directory.
 ```{r}
 write.table(annote_DEGlist, "../output/annote_DEGlist.tab", row.names = T)
 ```
 
-# Wrangling Annotated DEG Data
+# **Wrangling Annotated DEG Data**
 
 Make a vector of the top 100 differentially expressed genes:
 ```{r top 100 DEGs, eval=TRUE, cache=TRUE}
-
 # Select top 100 differentially expressed genes
 deseq2.res <- results(deseq2.dds)
 res_ordered <- deseq2.res[order(deseq2.res$padj), ]
 #create object that we will reference later
 top_genes <- row.names(res_ordered)[1:100] 
 ```
+
 Next in order to merge the annotated blast table with the counts data we will need to transform the counts matrix into a data frame so that we can use the merge() function.
 ```{r counts matrix to df, eval=TRUE, cache=TRUE}
 #extract counts and normalizes them 
 counts <- counts(deseq2.dds, normalized = TRUE)
-countsdf <- as.data.frame(counts)
-countsdf$access_num <- row.names(countsdf) #new column
-countsdf <- countsdf[ , c(5, 1:4)] #puts accession col in front
+counts <- as.data.frame(counts)
+counts$access_num <- row.names(counts) #new column
+counts <- counts[ , c(5, 1:4)] #puts accession col in front
 ```
 
 Read in blast annotated table:
@@ -431,11 +420,11 @@ blast_go <- read.delim(file = "../output/blast_annot_go.tab")
 colnames(blast_go)[1] <- 'access_num' 
 ```
 
-Merge blast data frame and count data frame by an inner join so that we can just label genes that exist in the countsdf data frame. Note that there will be duplicate protein entries in this new merged data frame that got annotated the same in BLASTing. This is normal and so we are just going to get rid duplicates so that we are actually able to visualize whats going on.
+Merge blast data frame and count data frame by an inner join. Note, there will be duplicate protein entries in this new merged data frame. This is normal and so we are just going to get rid duplicates.
 ```{r merge annotated blast table and counts df, eval=TRUE, cache=TRUE}
 #merge the blast table and counts table together
 #both must be data frames
-counts_pro <- merge(countsdf, blast_go, by = "access_num", all = FALSE) 
+counts_pro <- merge(counts, blast_go, by = "access_num", all = FALSE) 
 
 #checking if there any duplicates
 head(which(duplicated(counts_pro))) 
@@ -466,14 +455,13 @@ head(counts_top) #lets take a peak!
 nrow(counts_top) #how many top DEGs are we going to graph?
 ```
 
-Renaming rows as protein names so that the axis has them
+Renaming rows as protein names so that the axis has them.
 ```{r, eval=TRUE, cache=TRUE}
 counts_top_pro <- counts_top[, c(2:5, 9)]
 rownames(counts_top_pro) <- counts_top_pro[,"Protein.names"]
 counts_top_pro <- counts_top_pro[ ,-5]
 counts_top_pro <- as.matrix(counts_top_pro)
 ```
-
 
 Next we have to do a log transformation of the counts but this first means making a new matrix that takes the contents of the previous one (character values) and converts them into numeric values to apply the arithmetic function of log2().
 ```{r getting log counts, eval=TRUE, cache=TRUE}
@@ -490,7 +478,6 @@ protein_names2 <- protein_names %>%
   sub('\\[.*?\\]', ' ', .)
 
 rownames(counts_top_pro2) <- protein_names2
-
 ```
 
 
@@ -498,8 +485,10 @@ rownames(counts_top_pro2) <- protein_names2
 # Perform log transformation
 log_counts_top2 <- log2(counts_top_pro2 + 1)
 ```
-# Explanatory Visualization
+# **Explanatory Visualization**
 ## Principle Components Analysis
+
+Here we see that the two blastogenic stages cluster into two distinct groups in the PCA plot.
 ```{r PCA, eval = TRUE, cache=TRUE}
 vsd <- vst(deseq2.dds, blind = FALSE)
 
@@ -516,20 +505,6 @@ Now that we have a log counts object we can use it to start generating better lo
 pink <- colorRampPalette(brewer.pal(8, "PiYG"))(25)
 blue <- colorRampPalette(brewer.pal(8, "Blues"))(25)
 ```
-
-Note that the x-axis will be re-ordered in this heat map when the functions calculates the dendrogram for the columns.
-```{r base r heatmaps, eval=TRUE, cache=TRUE}
-# generating different plots with different colors/labels
-heatmap(log_counts_top2, 
-        scale="column", 
-        col = blue, 
-        cexCol = 0.8,
-        margins = c(10,20),
-        xlab = "Sample",
-        ylab = "Protein Name")
-
-```
-
 
 ```{r playing with other heatmap.2 function, eval=TRUE, cache=TRUE}
 # Customize the heatmap using heatmap.2
@@ -549,6 +524,24 @@ heatmap.2(log_counts_top2,
           trace="none",              # Remove the trace lines
           cexCol = 1)                # Adjust column label font size
 ```
+
+### Protein coding transcripts upregulated in takeover relative to b5-b6:
+
+- Purine nucleoside phosphorylase: is an enzyme which catalyzes the first step in either purine base salvage or nucleoside catabolism.
+
+- Cytochrome c oxidase subunit 3: component of the respiratory chain that catalyzes the reduction of oxygen to water.
+
+- Pyridoxal 5'-phosphate synthase subunit SNZERR: coenzyme in all transamination reactions, and in certain decarboxylation, deamination, and racemization reactions of amino acids.
+
+Several transcripts upregulated associated with **catabolism**. In line with the phenomenon of reabsorption of the parental zooid. 
+
+### Protein coding transcripts upregulated in b5-b6 relative to TO:
+
+- Several elongation factors: involved in protein synthesis.
+
+- Several actin related genes
+
+The b5-b6 stage is a period of growth especially relative to the TO stage, it is thus expected to find an upregulation of protein coding genes related to protein synthesis in and cell structure maintenance.
 
 ## Volcano Plot
 
@@ -579,4 +572,16 @@ EnhancedVolcano(transcriptome_anno,
 
 ```
 
+### Upregulated 
+- COX3: mitochondrial activity
+- PNPH: enzyme which reversibly catalyzes the phosphorolysis of purine nucleosides
+- ANX11: cell cycle regulation
 
+### Downregulated 
+- TUBB4B: involved in microtubule cytoskeleton organization and mitotic cell cycle
+
+# **Next Steps**
+1. Further work out the biological meaning of my findings.
+2. Complete functional enrichment analysis.
+2. Apply this workflow to transcriptomic data that I plan to generate for preliminary study evaluating changes in gene expression over time in primary cultures of *Botryllus schlosseri*.
+![](https://github.com/course-fish546-2023/celeste-tunicate-devo/blob/main/notes/next_schematic.jpeg?raw=true)
