@@ -1,8 +1,9 @@
 ---
 title: "Functional Enrichment Analysis"
-output: html_document
+output: md_document
 date: "2023-05-04"
 ---
+
 # Functional Enrichment Overview
 Currently, this portion of the workflow is a work in progress as of 05/09/2023.
 
@@ -29,9 +30,10 @@ library(biomaRt)  # only use to remove cache bug
 library(tidyverse)
 library(dplyr)
 library(goseq)
+library(DESeq2)
 knitr::opts_chunk$set(
   echo = TRUE,         # Display code chunks
-  eval = FALSE,         # Setting this to false will allow us to knit the code without evaluating code chunks
+  eval = TRUE,         # Setting this to false will allow us to knit the code without evaluating code chunks
   warning = FALSE,     # Hide warnings
   message = FALSE,     # Hide messages
   fig.width = 6,       # Set plot width in inches
@@ -94,7 +96,11 @@ transcriptome_anno <- merge(blast_go_small, res_df, by = "access_num", all = TRU
 We will read in the annotated DEG list that was created in the 04-blast code script.
 ```{r}
 diff_genes <- read.delim(file = "../output/annote_DEGlist.tab", sep =" ")
+
+#peak at annotated DEG list
+head(diff_genes)
 ```
+
 
 ## define gene list and background
 ```{r}
@@ -104,6 +110,8 @@ go_ids <- diff_genes$Gene.Ontology.IDs
 go_bp_annotations <- diff_genes$Gene.Ontology..biological.process
 deg_data <- data.frame(gene = gene_list, GO_ID = go_ids, GO_BP = go_bp_annotations)
 
+#peak at deg_data
+head(deg_data)
 
 ```
 ### Brainstorming, code may or may not work below, beware... 
