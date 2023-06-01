@@ -1,0 +1,185 @@
+---
+title: "RNAseq Data Anaylsis Workflow Update"
+author: "Celeste Valdivia"
+format: revealjs
+editor: visual
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(tidyverse)
+library(DESeq2)
+library(pheatmap)
+library(RColorBrewer)
+library(data.table)
+knitr::opts_chunk$set(
+  echo = TRUE,         # Display code chunks
+  eval = FALSE,         # Evaluate code chunks
+  warning = FALSE,     # Hide warnings
+  message = FALSE,     # Hide messages
+  fig.width = 6,       # Set plot width in inches
+  fig.height = 4,      # Set plot height in inches
+  fig.align = "center" # Align plots to the center
+)
+```
+
+## Project goal
+
+Conduct differential expression analysis from 4 of the 90 RNAseq files produced from [Kowarsky et al., 2021](https://doi.org/10.1016/j.celrep.2020.108681).
+
+| Run         | Bases       | dev_stage | TISSUE       |
+|-------------|-------------|-----------|--------------|
+| SRR10352205 | 10576501436 | b5-b6     | whole system |
+| SRR10352206 | 3609019200  | b5-b6     | whole system |
+| SRR10352224 | 4847587800  | TO        | whole system |
+| SRR10352254 | 5482368900  | TO        | whole system |
+
+## Visualization of blastogenic stages {background-image="https://github.com/valeste/valeste.github.io/blob/master/assets/img/sex_asex_devo_TO_b5.jpeg?raw=true" background-size="700px"}
+
+## Methods Overview
+
+1.  Access RNAseq data
+2.  Create a refernce index
+3.  Align RNAseq data to reference
+5.  Make transcript count matrix
+6.  Conduct differential expression analysis using DESeq2
+
+## Accessing RNAseq data
+
+For the data we will generate in our own project, the SRA Toolkit will not be used. Instead I plan to curl the data directly from [Gannet server](https://gannet.fish.washington.edu/), a computer available for data hosting in the Roberts Lab.
+```{r, engine = 'bash'}
+#| code-line-numbers: "1"
+/home/shared/sratoolkit.3.0.2-ubuntu64/bin/./fasterq-dump \
+--outdir /home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw \
+--progress \
+SRR10352205 \
+SRR10352206 \
+SRR10352224 \
+SRR10352254
+```
+
+## Transcript Quantification (psuedo-alignment)
+
+Created a reference with 'index' command of Kallisto using ~99k mRNA "complete records" from NCBI.
+```{r, engine = 'bash'}
+#| code-line-numbers: "2"
+/home/shared/kallisto/kallisto \
+index -i \
+/home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/bsc_rna.index \
+/home/shared/8TB_HDD_02/cvaldi/celeste-tunicate-devo/data/sequence.fasta
+```
+
+Use the 'quant' command on Kallisto to conduct the psuedo-alignment:
+```{r, engine = 'bash'}
+#| code-line-numbers: "1"
+/home/shared/kallisto/kallisto quant -i ../data/bsc_rna.index \
+-o ../output/kallisto_01/SRR10352205 \
+-t 40 \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_1.fastq \
+/home/shared/8TB_HDD_01/cvaldi/tunicate-fish546/raw/SRR10352205_2.fastq
+```
+
+## Making a transcript count matrix with Trinity
+
+Make transcript count matrix using the perl abundance_estimates_to_matrix Trinity script: 
+```{r, engine = 'bash', eval = FALSE}
+#| code-line-numbers: "1"
+perl /home/shared/trinityrnaseq-v2.12.0/util/abundance_estimates_to_matrix.pl \
+--est_method kallisto \
+--gene_trans_map none \
+--out_prefix ../output/kallisto_01 \
+    --name_sample_by_basedir \
+    ../output/kallisto_01/SRR10352205/abundance.tsv \
+    ../output/kallisto_01/SRR10352206/abundance.tsv \
+    ../output/kallisto_01/SRR10352224/abundance.tsv \
+    ../output/kallisto_01/SRR10352254/abundance.tsv 
+```
+
+## Viewing the initial count matrix
+Here we will tidy up the count matrix and take a peak at the first 6 rows.
+
+```{r, eval=TRUE, echo=FALSE}
+countmatrix <- read.delim("../output/kallisto_01.isoform.counts.matrix", header = TRUE, sep = '\t')
+rownames(countmatrix) <- countmatrix$X #this line renames the row names from 1-n to the value of the first column called x
+countmatrix <- countmatrix[,-1] #this gets rid of the first column
+countmatrix <- round(countmatrix, 0) #rounds values in count matrix
+head(countmatrix)
+```
+
+Checked how many genes are in the count matrix
+```{r, eval=TRUE, echo=FALSE}
+print(paste("Number of genes to evaluate:", nrow(countmatrix)))
+```
+
+## 6. Using DESeq2 
+Now we will follow the standard DESeq workflow
+```{r, eval=TRUE}
+#| code-line-numbers: "9"
+# Make a new data frame containing info about conditions in study
+deseq2.colData <- data.frame(condition=factor(c(rep("b5-b6", 2), rep("TO", 2))), 
+                             type=factor(rep("paired-end", 4)))
+rownames(deseq2.colData) <- colnames(data)
+deseq2.dds <- DESeqDataSetFromMatrix(countData = countmatrix,
+                                     colData = deseq2.colData, 
+                                     design = ~ condition)
+# Run a DESeq analysis
+deseq2.dds <- DESeq(deseq2.dds)
+deseq2.res <- results(deseq2.dds)
+deseq2.res <- deseq2.res[order(rownames(deseq2.res)), ]
+hits <- nrow(deseq2.res[!is.na(deseq2.res$padj) & deseq2.res$padj <= 0.05, ])
+print(paste("Number of differentially expressed genes with p-value less than 0.05:", hits))
+```
+
+## Preliminary results: Exploratory PCA
+```{r, echo = F, eval =TRUE}
+vsd <- vst(deseq2.dds, blind = FALSE)
+plotPCA(vsd, intgroup = "condition")
+```
+
+## Preliminary results: Exploratory heatmap
+```{r, eval=TRUE, echo=FALSE}
+# Select top 50 differentially expressed genes
+res <- results(deseq2.dds)
+res_ordered <- res[order(res$padj), ]
+top_genes <- row.names(res_ordered)[1:50]
+
+# Extract counts and normalize
+counts <- counts(deseq2.dds, normalized = TRUE)
+counts_top <- counts[top_genes, ]
+
+# Log-transform counts
+log_counts_top <- log2(counts_top + 1)
+
+# Generate heatmap
+pheatmap(log_counts_top, scale = "row")
+```
+
+## Preliminary results: Exploratory Volcano Plot
+```{r, eval=TRUE, echo=FALSE}
+# Prepare the data for plotting
+res_df <- as.data.frame(deseq2.res)
+res_df$gene <- row.names(res_df)
+
+# Create volcano plot
+volcano_plot <- ggplot(res_df, aes(x = log2FoldChange, y = -log10(padj), color = padj < 0.05)) +
+  geom_point(alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = c("grey", "red")) +
+  labs(title = "Volcano Plot",
+       x = "Log2 Fold Change",
+       y = "-Log10 Adjusted P-value",
+       color = "Significantly\nDifferentially Expressed") +
+  theme_minimal() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "top")
+
+print(volcano_plot)
+```
+
+## Next Steps
+
+1. Go back and do a proper transcriptome alignment. Found annotated genome on *Botryllus schlosseri* Genome Project [web server](http://botryllus.stanford.edu/botryllusgenome/download/).
+2. Play with making a better looking plot for my DEG analysis
+3. Go back and do further quality assessment and control since there is so much variance within one of my groups due to differences in sequencing depth amongst samples of the same group.
+
+
