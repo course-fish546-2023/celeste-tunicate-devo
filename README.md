@@ -1,5 +1,7 @@
 # Differential Gene Expression Analysis of two Distinct Asexual Stages in a Marine Tunicate
 
+[![DOI](https://zenodo.org/badge/621994954.svg)](https://zenodo.org/badge/latestdoi/621994954)
+
 ### View [Project Compendium](https://rpubs.com/cvaldi/1040648) page to see whole workflow in one place.
 
 ### Objectives
